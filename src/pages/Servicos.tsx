@@ -1,4 +1,4 @@
-import { AccordionServicos } from "@/components/servicos/accordion_servicos";
+import { CardServicos } from "@/components/servicos/cards_servicos";
 import Header from "@/components/servicos/header";
 
 export default function Servico() {
@@ -9,7 +9,7 @@ export default function Servico() {
       <h2 className="text-3xl font-semibold pb-10">
         Estética Facial & Corporal
       </h2>
-      <AccordionServicos />
+      <CardServicos />
     </div>
   );
 }
