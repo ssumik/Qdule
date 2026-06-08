@@ -20,17 +20,17 @@
   letter-spacing: 0.2px;
 
   /* DEGRADE GLOBAL */
-  --bg-gradient: linear-gradient(90deg, #e3a8a1 0%, #f7afcf 50%, #d8a6f7 100%);
+  --bg-gradient: linear-gradient(90deg, #e6a1b2 0%, #fac8c8 50%, #e6a1b2 100%);
 
   /* shadcn tokens */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
 
-  --primary: oklch(67.213% 0.19808 341.179);
+  --primary: oklch(81% 0.117 11.638);
   --secondary: oklch(0.97 0 0);
   --muted: oklch(0.97 0 0);
   --accent: oklch(0.97 0 0);
-  --ring: oklch(45.535% 0.21474 311.865);
+  --ring: oklch(79.946% 0.09278 13.413);
 }
 
 /* =========================
@@ -74,12 +74,10 @@ h6 {
 
 h1 {
   font-size: 56px;
-  margin: 32px 0;
 }
 
 h2 {
   font-size: 24px;
-  margin-bottom: 8px;
 }
 
 p {
@@ -121,5 +119,5 @@ code {
    COMPONENTE (igual ao da imagem)
 ========================= */
 .card-gradient {
-  background: linear-gradient(90deg, #e3a8a1 0%, #f7afcf 50%, #d8a6f7 100%);
+  background: linear-gradient(90deg, #e3a8a1 0%, #f7afcf 50%, #e29ec4 100%);
 }

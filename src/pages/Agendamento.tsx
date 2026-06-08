@@ -1,11 +1,21 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import type { Servico } from "@/components/servicos/cards_servicos";
 
-/* ================= MOCK ================= */
-
+// ─── mock de horários por dia ─────────────────────────────────────────────────
 const mockHorarios: Record<number, string[]> = {
   21: ["08:30", "09:30", "10:00", "10:15", "10:30"],
   22: ["10:00"],
@@ -13,154 +23,281 @@ const mockHorarios: Record<number, string[]> = {
   27: ["10:00"],
 };
 
-export default function Agenda() {
-  const navigate = useNavigate();
-  const location = useLocation();
+// ─── props ────────────────────────────────────────────────────────────────────
+interface AgendaInlineProps {
+  servico: Servico;
+  onFechar: () => void;
+}
 
-  const servico = location.state?.servico;
+// ─── componente ───────────────────────────────────────────────────────────────
+export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
+  const navigate = useNavigate();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [horarios, setHorarios] = useState<string[]>([]);
-  const [horarioSelecionado, setHorarioSelecionado] = useState<string | null>(
-    null,
-  );
+  const [horarioSelecionado, setHorarioSelecionado] = useState<string | null>(null);
+  const [modalAberto, setModalAberto] = useState(false);
 
+  // Derived — dia e mês formatados
   const diaSelecionado = date ? String(date.getDate()).padStart(2, "0") : null;
-  const mesSelecionado = date
-    ? String(date.getMonth() + 1).padStart(2, "0")
-    : null;
+  const mesSelecionado = date ? String(date.getMonth() + 1).padStart(2, "0") : null;
+  const diaNum = date ? date.getDate() : null;
+  const horarios: string[] = diaNum ? (mockHorarios[diaNum] ?? []) : [];
 
-  useEffect(() => {
-    if (!diaSelecionado) return;
-
-    setHorarios([]);
+  // Limpa horário quando muda o dia
+  function handleSelectDate(novaData: Date | undefined) {
+    setDate(novaData);
     setHorarioSelecionado(null);
+  }
 
-    const timer = setTimeout(() => {
-      const diaNum = Number(diaSelecionado);
-      setHorarios(mockHorarios[diaNum] || []);
-    }, 250);
+  // ─── formulário ────────────────────────────────────────────────────────────
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm({
+    defaultValues: { nome: "", email: "", celular: "" },
+  });
 
-    return () => clearTimeout(timer);
-  }, [diaSelecionado]);
-
-  function handleConfirmar() {
-    navigate("/cadastro", {
+  function onSubmit(dados: Record<string, string>) {
+    setModalAberto(false);
+    navigate("/confirmacao", {
       state: {
         agendamento: {
-          servico: servico, // O que veio da primeira tela
-          dia: diaSelecionado, // Adicionado aqui
-          mes: mesSelecionado, // Adicionado aqui
-          horario: horarioSelecionado, // Adicionado aqui
+          servico,
+          dia: diaSelecionado,
+          mes: mesSelecionado,
+          horario: horarioSelecionado,
+          ...dados,
         },
       },
     });
   }
 
-  if (!servico) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Serviço não encontrado</p>
-      </div>
-    );
+  function handleCelularChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const formatado = e.target.value
+      .replace(/\D/g, "")
+      .replace(/^(\d{2})(\d)/g, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .substring(0, 15);
+    setValue("celular", formatado);
   }
 
+  // ─── render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen px-6 py-10 flex justify-center">
-      {/* Container principal agora é uma coluna única e estreita */}
-      <div className="w-full max-w-md flex flex-col gap-8">
-        {/* HEADER E RESUMO DO SERVIÇO */}
-        <div className="flex flex-col gap-6">
-          <header className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(-1)}
-              className="p-0 h-auto cursor-pointer"
-            >
-              <ArrowLeft />
-            </Button>
-            <h2 className="font-semibold text-foreground">
-              Horários disponíveis
-            </h2>
-          </header>
+    <div className="w-full rounded-2xl bg-white/10 backdrop-blur-lg border border-rose-100 shadow-xl p-6 md:p-8">
 
-          <div className="rounded-2xl p-6 bg-white/60 border border-border shadow-sm">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-              Serviço selecionado:
-            </p>
-            <h2 className="text-2xl font-bold text-fuchsia-800 mt-1">
-              {servico.nome}
-            </h2>
-            <p className="text-sm mt-2 font-medium">
-              R$ {servico.preco} • {servico.duracao} min
-            </p>
-          </div>
+      {/* Cabeçalho da agenda */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={onFechar}
+            className="p-0 h-auto cursor-pointer text-rose-400 hover:text-rose-600"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h2 className="font-semibold text-foreground text-lg">
+            Horários disponíveis
+          </h2>
         </div>
+      </div>
 
-        {/* CALENDÁRIO */}
-        <section className="space-y-4">
-          <h3 className="font-bold text-lg text-foreground">
-            1. Escolha o dia
+      {/* Badge do serviço selecionado */}
+      <div className="rounded-2xl p-5 bg-white/80 border border-rose-100 shadow-sm mb-8">
+        <p className="text-xs uppercase tracking-wider text-rose-400 font-semibold">
+          Serviço selecionado
+        </p>
+        <h2 className="text-2xl font-bold mt-1">{servico.nome}</h2>
+        <p className="text-sm mt-1 font-medium text-muted-foreground">
+          R$ {servico.preco} • {servico.duracao} min
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* 1. Calendário */}
+        <section className="space-y-4 max-w-sm mx-auto w-full">
+          <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-400 text-white text-xs font-bold">
+              1
+            </span>
+            Escolha o dia
           </h3>
-          <div className="flex justify-center p-4">
+          
+          {/* AJUSTE AQUI: w-fit faz o background murchar ao tamanho exato do calendário */}
+          <div className="w-fit mx-auto p-3 bg-white/70 rounded-xl border border-rose-50 shadow-sm">
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate}
+              onSelect={handleSelectDate}
               captionLayout="dropdown"
-              disabled={{ before: new Date() }}
+              disabled={{ before: new Date(), after: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) }}
               className="rounded-lg"
             />
           </div>
+          
           {diaSelecionado && (
-            <p className="text-sm font-medium text-center">
-              Data selecionada: {diaSelecionado}/{mesSelecionado}
+            <p className="text-sm font-medium text-center text-muted-foreground">
+              Data selecionada:{" "}
+              <span className="text-rose-500 font-semibold">
+                {diaSelecionado}/{mesSelecionado}
+              </span>
             </p>
           )}
         </section>
 
-        {/* HORÁRIOS */}
-        <section className="space-y-4">
-          <h3 className="font-bold text-lg text-foreground">
-            2. Escolha o horário
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {horarios.length === 0 && diaSelecionado && (
-              <p className="col-span-3 text-sm text-center py-4 text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
-                Nenhum horário disponível para esse dia
-              </p>
+        {/* 2. Horários + botão */}
+        <section className="space-y-6 flex flex-col">
+          <div className="space-y-4">
+            <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-400 text-white text-xs font-bold">
+                2
+              </span>
+              Escolha o horário
+            </h3>
+
+            <div className="grid grid-cols-3 gap-3">
+              {horarios.length === 0 && diaSelecionado && (
+                <p className="col-span-3 text-sm text-center py-5 text-muted-foreground bg-muted/40 rounded-xl border border-dashed">
+                  Nenhum horário disponível para esse dia
+                </p>
+              )}
+
+              {!diaSelecionado && (
+                <p className="col-span-3 text-sm text-center py-5 text-muted-foreground bg-muted/40 rounded-xl border border-dashed">
+                  Selecione um dia primeiro
+                </p>
+              )}
+
+              {horarios.map((hora) => {
+                const ativo = horarioSelecionado === hora;
+                return (
+                  <Button
+                    key={hora}
+                    onClick={() => setHorarioSelecionado(hora)}
+                    variant="outline"
+                    className={`rounded-xl cursor-pointer h-12 transition-all font-semibold ${
+                      ativo
+                        ? "bg-rose-400 text-white border-rose-400 scale-105 hover:bg-rose-400"
+                        : "hover:border-rose-300 hover:text-rose-500"
+                    }`}
+                  >
+                    {hora}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Resumo + Próximo passo */}
+          <div className="mt-auto space-y-4">
+            {/* Resumo da seleção */}
+            {diaSelecionado && horarioSelecionado && (
+              <div className="rounded-xl px-4 py-3 bg-rose-50 border border-rose-100 flex items-center justify-center gap-2 text-rose-600">
+                <span className="font-semibold text-sm">
+                  {diaSelecionado}/{mesSelecionado}
+                </span>
+                <span className="opacity-40 text-sm">|</span>
+                <span className="font-bold text-sm">{horarioSelecionado}h</span>
+              </div>
             )}
 
-            {horarios.map((hora) => {
-              const ativo = horarioSelecionado === hora;
-              return (
+            {/* Dialog de cadastro */}
+            <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+              <DialogTrigger asChild>
                 <Button
-                  key={hora}
-                  onClick={() => setHorarioSelecionado(hora)}
-                  variant="outline"
-                  className={`rounded-xl cursor-pointer h-12 transition-all ${
-                    ativo
-                      ? "bg-pink-400 text-white border-pink-400 shadow-md scale-105"
-                      : "hover:border-pink-300"
-                  }`}
+                  disabled={!diaSelecionado || !horarioSelecionado}
+                  className="w-full h-14 cursor-pointer bg-rose-400 hover:bg-rose-500 text-white text-base font-bold rounded-2xl shadow-lg disabled:opacity-50 transition-all active:scale-95"
                 >
-                  {hora}
+                  Próximo passo
                 </Button>
-              );
-            })}
+              </DialogTrigger>
+
+              <DialogContent className="w-[95%] sm:max-w-md rounded-2xl bg-white/90 backdrop-blur-md border border-white/20 p-6 shadow-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-semibold leading-tight text-left">
+                    Para confirmar seu horário, precisamos de algumas informações
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Resumo no topo do modal */}
+                <div className="rounded-xl px-4 flex flex-row items-center justify-center gap-2 bg-rose-100 py-2 my-2 text-rose-700">
+                  <span className="font-semibold text-sm">
+                    {diaSelecionado}/{mesSelecionado}
+                  </span>
+                  <span className="text-sm font-semibold opacity-60">|</span>
+                  <span className="font-bold text-sm">{horarioSelecionado}h</span>
+                </div>
+
+                {/* Formulário */}
+                <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 mt-2">
+                  <div className="grid gap-2">
+                    <Label className="font-bold text-sm">Nome Completo</Label>
+                    <Input
+                      className="bg-white"
+                      {...register("nome", {
+                        required: "Nome é obrigatório",
+                        minLength: { value: 3, message: "Nome muito curto" },
+                      })}
+                      placeholder="Ex: Maria Silva"
+                    />
+                    {errors.nome && (
+                      <span className="text-red-500 text-xs">
+                        {errors.nome.message}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label className="font-bold text-sm">E-mail</Label>
+                    <Input
+                      className="bg-white"
+                      type="email"
+                      {...register("email", {
+                        required: "E-mail obrigatório",
+                        pattern: {
+                          value: /\S+@\S+\.\S+/,
+                          message: "E-mail inválido",
+                        },
+                      })}
+                      placeholder="exemplo@email.com"
+                    />
+                    {errors.email && (
+                      <span className="text-red-500 text-xs">
+                        {errors.email.message}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label className="font-bold text-sm">Celular</Label>
+                    <Input
+                      className="bg-white"
+                      type="tel"
+                      {...register("celular", {
+                        required: "Celular é obrigatório",
+                      })}
+                      onChange={handleCelularChange}
+                      placeholder="(47) 99999-9999"
+                    />
+                    {errors.celular && (
+                      <span className="text-red-500 text-xs">
+                        {errors.celular.message}
+                      </span>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-rose-400 hover:bg-rose-500 text-white rounded-xl h-12 mt-2 cursor-pointer"
+                  >
+                    Confirmar Agendamento
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </section>
-
-        {/* BOTÃO FINAL */}
-        <div className="pt-4">
-          <Button
-            disabled={!diaSelecionado || !horarioSelecionado}
-            onClick={handleConfirmar}
-            className="w-full h-14 cursor-pointer bg-pink-400 hover:bg-pink-500 text-white text-lg font-bold rounded-2xl shadow-lg disabled:opacity-30 transition-all active:scale-95"
-          >
-            Próximo passo
-          </Button>
-        </div>
       </div>
     </div>
   );

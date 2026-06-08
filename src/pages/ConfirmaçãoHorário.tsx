@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Clock } from "lucide-react";
+import { ArrowLeft, CalendarDays} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Label } from "../components/ui/label";
@@ -62,38 +62,34 @@ export default function ConfirmaçãoHorário() {
               <p className="text-sm text-muted-foreground">
                 Você selecionou o serviço:
               </p>
-              <p className="font-bold text-pink-500 text-lg">{servico?.nome}</p>
-              <p className="text-sm font-medium text-gray-700">
+              <h2 className="font-bold text-rose-500">{servico?.nome}</h2>
+              <p className="text-sm font-medium text-gray-600">
                 R$ {Number(servico?.preco).toFixed(2).replace(".", ",")} •{" "}
                 {servico?.duracao} min
               </p>
-              <p className="text-xs text-gray-500 italic">
-                em Hanna Kupas - Estética facial & Corporal
-              </p>
             </div>
 
-            <div className="pt-4 rounded-xl px-10 flex flex-col items-center justify-center gap-2">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="size-10 text-pink-600" />
-                <h2 className="font-semibold text-sm">
-                  {dia}/{mes}
-                </h2>
-              </div>
+             <div className="rounded-xl px-6 flex flex-row items-center justify-center gap-2 bg-rose-200 py-4">
+                <CalendarDays className="text-rose-400" />
+                <div className="flex items-center">
+                  <h2 className="font-semibold text-sm">{dia}/{mes}</h2>
+                </div>
+            
+                <span className="font-semibold">|</span>
 
-              <div className="flex items-center gap-2">
-                <Clock className="size-10 text-pink-600" />
-                <h2 className="font-bold">{horario}</h2>
-              </div>
+                <div className="flex items-center">
+                  <h2 className="font-bold text-sm">{horario}h</h2>
+                </div>
             </div>
 
             <div className="pt-2">
-              <p className="text-sm text-center font-bold text-fuchsia-800 mb-4">
+              <p className="text-sm text-center font-bold text-rose-500 mb-4">
                 Deseja confirmar o agendamento acima?
               </p>
               <div className="flex items-start space-x-3 bg-muted/30 p-4 rounded-lg border border-border">
                 <Checkbox
                   id="termos"
-                  className="mt-1 border-fuchsia-800 data-[state=checked]:bg-pink-400 data-[state=checked]:border-pink-400 cursor-pointer"
+                  className="mt-1 border-rose-400 data-[state=checked]:bg-rose-400 data-[state=checked]:border-rose-400 cursor-pointer"
                 />
                 <Label
                   htmlFor="termos"
@@ -106,14 +102,14 @@ export default function ConfirmaçãoHorário() {
 
               <Button
                 variant="link"
-                className="underline-offset-4 cursor-pointer"
+                className="underline-offset-4 cursor-pointer text-sm text-gray-500 mt-4"
                 onClick={cancelarAgendamento}
               >
                 Quero cancelar
               </Button>
 
               <Button
-                className="w-full bg-pink-400 hover:bg-pink-500 text-white rounded-xl h-12 cursor-pointer"
+                className="w-full bg-rose-400 hover:bg-rose-500 text-white rounded-xl h-12 cursor-pointer"
                 onClick={finalizarAgendamento}
               >
                 Confirmar Agendamento

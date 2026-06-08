@@ -124,7 +124,7 @@ export default function Cadastro() {
 
           <Button
             type="submit"
-            className="w-full bg-pink-400 hover:bg-pink-500 text-white rounded-xl h-12 mt-4 cursor-pointer"
+            className="w-full bg-rose-400 hover:bg-rose-500 text-white rounded-xl h-12 mt-4 cursor-pointer"
           >
             Confirmar
           </Button>
