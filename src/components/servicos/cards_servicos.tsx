@@ -231,10 +231,10 @@ export function CardServicos() {
   return (
     <div className="w-full py-10 px-4 lg:px-20 bg-white/30 backdrop-blur-lg rounded-2xl shadow-xl mt-10">
       {/* Cabeçalho */}
-      <div className="mb-10">
+      <div className="mb-10 flex items-start flex-col">
         <h1 className="text-4xl font-semibold">Meus serviços</h1>
-        <p className="text-muted-foreground mt-2">
-          Escolha um serviço e agende seu horário
+        <p className="text-gray-600 mt-2">
+          Escolha uma categoria para visualizar mais serviços
         </p>
       </div>
 

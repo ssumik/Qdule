@@ -184,8 +184,8 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                     variant="outline"
                     className={`rounded-xl cursor-pointer h-12 transition-all font-semibold ${
                       ativo
-                        ? "bg-button hover:bg-buttonhover text-white"
-                        : "bg-button hover:bg-buttonhover"
+                        ? "bg-button hover:bg-button text-white"
+                        : "bg-white text-accent"
                     }`}
                   >
                     {hora}
@@ -197,17 +197,6 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
           {/* Resumo + Próximo passo */}
           <div className="mt-auto space-y-4">
-            {/* Resumo da seleção */}
-            {diaSelecionado && horarioSelecionado && (
-              <div className="rounded-xl px-4 py-3 bg-red-50 border border-red-100 flex items-center justify-center gap-2 text-red-600">
-                <span className="font-semibold text-sm">
-                  {diaSelecionado}/{mesSelecionado}
-                </span>
-                <span className="opacity-40 text-sm">|</span>
-                <span className="font-bold text-sm">{horarioSelecionado}h</span>
-              </div>
-            )}
-
             {/* Dialog de cadastro */}
             <Dialog open={modalAberto} onOpenChange={setModalAberto}>
               <DialogTrigger asChild>
@@ -228,7 +217,9 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                 </DialogHeader>
 
                 {/* Resumo no topo do modal */}
-                <div className="rounded-xl px-4 flex flex-row items-center justify-center gap-2 bg-red-100 py-2 my-2 text-red-700">
+                <div className="rounded-xl px-10 flex flex-row items-center justify-center gap-2 bg-secondary py-2 my-2 text-accent">
+                  <span className="font-semibold text-sm">{servico.nome}</span>
+                  <span className="text-sm font-semibold opacity-60"> - </span>
                   <span className="font-semibold text-sm">
                     {diaSelecionado}/{mesSelecionado}
                   </span>
@@ -301,7 +292,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
                   <Button
                     type="submit"
-                    className="w-full bg-red-400 hover:bg-red-500 text-white rounded-xl h-12 mt-2 cursor-pointer"
+                    className="w-full bg-accent hover:bg-buttonhover text-white rounded-xl h-12 mt-2 cursor-pointer"
                   >
                     Confirmar Agendamento
                   </Button>

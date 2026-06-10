@@ -24,11 +24,6 @@ export default function Sucesso() {
                 Você receberá uma confirmação de agendamento pelo e-mail que
                 você cadastrou.
               </h2>
-              <img
-                src="/calendar.png"
-                alt="Calendário"
-                className="mx-auto mt-4"
-              />
             </div>
             <p>
               {" "}
@@ -37,7 +32,7 @@ export default function Sucesso() {
             </p>
             <div>
               <Button
-                className="w-full rounded-xl h-12 cursor-pointer text-white bg-pink-600 hover:bg-pink-700 focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
+                className="w-full rounded-xl h-12 cursor-pointer text-white bg-button hover:bg-buttonhover duration-200"
                 onClick={finalizarAgendamento}
               >
                 Voltar ao início

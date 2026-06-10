@@ -62,8 +62,8 @@ export default function ConfirmaçãoHorário() {
               <p className="text-sm text-muted-foreground">
                 Você selecionou o serviço:
               </p>
-              <h2 className="font-bold text-accent!">{servico?.nome}</h2>
-              <p className="text-sm font-medium text-gray-600">
+              <h2 className="font-bold! text-accent!">{servico?.nome}</h2>
+              <p className="text-sm text-gray-600">
                 R$ {Number(servico?.preco).toFixed(2).replace(".", ",")} •{" "}
                 {servico?.duracao} min
               </p>
