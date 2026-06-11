@@ -48,11 +48,11 @@ export default function Header() {
             <div className="p-2">
               <Button
                 variant="outline"
-                className="rounded-lg hover:bg-green-100 h-11 w-11 p-0 cursor-pointer"
+                className="rounded-lg hover:bg-primary h-11 w-11 p-0 cursor-pointer"
                 asChild
               >
                 <Link
-                  to="https://api.whatsapp.com/send/?phone=5547997074991&text&type=phone_number&app_absent=0&utm_source=ig"
+                  to="https://wa.me/5547997074991"
                   target="_blank"
                   className="flex items-center justify-center"
                 >
@@ -64,7 +64,7 @@ export default function Header() {
             <div className="p-2">
               <Button
                 variant="outline"
-                className="rounded-lg hover:bg-pink-200 h-11 w-11 p-0 cursor-pointer"
+                className="rounded-lg hover:bg-primary h-11 w-11 p-0 cursor-pointer"
                 asChild
               >
                 <Link
