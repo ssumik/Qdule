@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
 import type { Servico } from "@/components/servicos/cards_servicos";
-
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
-import { ConfirmacaoHorario } from "@/components/modal/ConfirmacaoHorario";
 
 // ─── mock de horários ─────────────────────────────────────────────────
 const mockHorarios: Record<number, string[]> = {
@@ -22,16 +20,6 @@ interface AgendaInlineProps {
   onFechar: () => void;
 }
 
-interface Agendamento {
-  servico: Servico;
-  dia: string | null;
-  mes: string | null;
-  horario: string | null;
-  nome: string;
-  email: string;
-  celular: string;
-}
-
 export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
 
@@ -40,10 +28,6 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
   );
 
   const [modalAberto, setModalAberto] = useState(false);
-
-  const [etapa, setEtapa] = useState<"cadastro" | "confirmacao">("cadastro");
-
-  const [agendamento, setAgendamento] = useState<Agendamento | null>(null);
 
   // ─── Datas derivadas ──────────────────────────────────────────────
 
@@ -69,43 +53,15 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
     email: string;
     celular: string;
   }) {
-    setAgendamento({
-      servico,
-      dia: diaSelecionado,
-      mes: mesSelecionado,
-      horario: horarioSelecionado,
-      ...dados,
-    });
-
-    setEtapa("confirmacao");
-  }
-
-  // ─── Confirmar agendamento ────────────────────────────────────────
-
-  function handleConfirmarAgendamento() {
-    alert(`Agendamento realizado com sucesso para ${agendamento?.nome}!`);
+    alert(`Agendamento realizado com sucesso para ${dados.nome}!`);
 
     setModalAberto(false);
-    setEtapa("cadastro");
-  }
-
-  // ─── Cancelar agendamento ─────────────────────────────────────────
-
-  function handleCancelarAgendamento() {
-    alert("Agendamento cancelado.");
-
-    setModalAberto(false);
-    setEtapa("cadastro");
   }
 
   // ─── Fechamento do modal ──────────────────────────────────────────
 
   function handleModalChange(open: boolean) {
     setModalAberto(open);
-
-    if (!open) {
-      setEtapa("cadastro");
-    }
   }
 
   return (
@@ -244,24 +200,13 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                   p-4 sm:p-6
                 "
               >
-                {etapa === "cadastro" ? (
-                  <CadastroAgendamento
-                    servico={servico}
-                    dia={diaSelecionado}
-                    mes={mesSelecionado}
-                    horario={horarioSelecionado}
-                    onSubmit={handleCadastroConcluido}
-                  />
-                ) : (
-                  agendamento && (
-                    <ConfirmacaoHorario
-                      agendamento={agendamento}
-                      onVoltar={() => setEtapa("cadastro")}
-                      onCancelar={handleCancelarAgendamento}
-                      onConfirmar={handleConfirmarAgendamento}
-                    />
-                  )
-                )}
+                <CadastroAgendamento
+                  servico={servico}
+                  dia={diaSelecionado}
+                  mes={mesSelecionado}
+                  horario={horarioSelecionado}
+                  onSubmit={handleCadastroConcluido}
+                />
               </DialogContent>
             </Dialog>
           </div>

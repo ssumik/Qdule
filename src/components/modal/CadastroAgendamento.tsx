@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import type { Servico } from "@/components/servicos/cards_servicos";
 
@@ -28,6 +30,8 @@ export function CadastroAgendamento({
   horario,
   onSubmit,
 }: CadastroAgendamentoProps) {
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -58,18 +62,29 @@ export function CadastroAgendamento({
       </h2>
 
       {/* Resumo */}
-      <div className="rounded-xl px-6 flex items-center justify-center gap-2 bg-secondary py-3 my-2 text-white">
-        <span className="font-semibold text-sm">{servico.nome}</span>
+      <div className="bg-primary rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 text-white">
+        <div className="flex-1 text-center sm:text-left">
+          <p className="text-sm text-black">Você selecionou o serviço:</p>
 
-        <span className="opacity-70">-</span>
+          <h2 className="font-bold text-accent wrap-break-words">
+            {servico?.nome}
+          </h2>
 
-        <span className="font-semibold text-sm">
-          {dia}/{mes}
-        </span>
+          <p className="text-sm text-accent">
+            R$ {Number(servico?.preco).toFixed(2).replace(".", ",")} •{" "}
+            {servico?.duracao} min
+          </p>
+        </div>
 
-        <span className="opacity-70">|</span>
+        <div className="bg-accent rounded-xl px-4 py-3 flex flex-col sm:flex-row items-center gap-2 text-white w-full sm:w-auto justify-center">
+          <span className="font-bold">
+            {dia}/{mes}
+          </span>
 
-        <span className="font-bold text-sm">{horario}h</span>
+          <span className="hidden sm:block font-semibold">|</span>
+
+          <span className="font-bold">{horario}h</span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 mt-2">
@@ -134,8 +149,26 @@ export function CadastroAgendamento({
           )}
         </div>
 
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="termos"
+            checked={aceitouTermos}
+            onCheckedChange={(checked) => setAceitouTermos(checked === true)}
+            className="border-accent mt-1"
+          />
+
+          <Label
+            htmlFor="termos"
+            className="text-sm leading-relaxed cursor-pointer"
+          >
+            Entendo que ao confirmar meu horário, taxas poderão ser aplicadas em
+            caso de cancelamento.
+          </Label>
+        </div>
+
         <Button
           type="submit"
+          disabled={!aceitouTermos}
           className="w-full bg-accent hover:bg-buttonhover text-white rounded-xl h-12 mt-2 cursor-pointer"
         >
           Continuar
