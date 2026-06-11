@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-
+import { ptBR } from "date-fns/locale";
 import type { Servico } from "@/components/servicos/cards_servicos";
 
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
@@ -109,7 +109,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
   }
 
   return (
-    <div className="w-full rounded-2xl bg-white/10 backdrop-blur-lg border border-red-100 shadow-xl p-6 md:p-8">
+    <div className="w-full rounded-2xl bg-ring/20 backdrop-blur-lg border border-red-100 shadow-xl p-6 md:p-8">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -156,6 +156,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
               selected={date}
               onSelect={handleSelectDate}
               captionLayout="dropdown"
+              locale={ptBR}
               disabled={{
                 before: new Date(),
                 after: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
@@ -229,7 +230,20 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="w-[95%] sm:max-w-md rounded-2xl bg-white/90 backdrop-blur-md border border-white/20 p-6 shadow-2xl">
+              <DialogContent
+                className="
+                  w-[95vw]
+                  max-w-md
+                  max-h-[85vh]
+                  overflow-y-auto
+                  rounded-2xl
+                  bg-white/90
+                  backdrop-blur-md
+                  border
+                  border-white/20
+                  p-4 sm:p-6
+                "
+              >
                 {etapa === "cadastro" ? (
                   <CadastroAgendamento
                     servico={servico}
