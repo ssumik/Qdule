@@ -6,29 +6,36 @@ import { FaWhatsapp, FaInstagram } from "react-icons/fa"; // Certifique-se de te
 export default function Header() {
   return (
     <div className="w-full pb-10">
-      <div className="flex justify-end relative w-full h-full bg-ring px-20">
-        <img
-          src="/hanna2.png"
-          alt="Hanna Kupas"
-          className="absolute inset-0 h-full object-cover"
-        />
+      <div className="flex flex-col md:flex-row w-full bg-ring md:items-stretch">
+        {/* Imagem */}
+        <div className="w-full md:w-1/2 h-48 md:h-auto md:max-h-500px">
+          <img
+            src="/hanna3.jpg"
+            alt="Hanna Kupas"
+            className="w-full h-full object-cover object-top"
+          />
+        </div>
 
-        <div className="relative z-10 h-full flex flex-col items-center px-4 pt-40">
-          <h1 className="text-4xl font-bold! text-white!">Hanna Kupas</h1>
+        {/* Conteúdo */}
+        <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-4 py-10 md:py-10">
+          <h1 className="text-3xl md:text-4xl font-bold! text-white! text-center">
+            Hanna Kupas
+          </h1>
 
-          <h2 className="text-3xl font-semibold text-brown!">
+          <h2 className="text-2xl md:text-3xl font-semibold text-brown! text-center">
             Estética Facial & Corporal
           </h2>
+
           {/* Texto de Boas-vindas */}
           <div className="w-full max-w-4xl p-4 mt-2">
-            <p className="text-center text-lg text-white! pb-10">
+            <p className="text-center text-base md:text-lg text-white! pb-6 md:pb-6">
               Bem-vinda! Descubra nossos serviços de estética facial e corporal,
               massoterapia e pós-operatório projetados para realçar sua beleza
               natural e proporcionar momentos de puro cuidado e relaxamento.
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-2">
             <div className="p-2">
               <Button
                 variant="outline"
@@ -76,6 +83,9 @@ export default function Header() {
                 </Link>
               </Button>
             </div>
+          </div>
+          <div className="w-full max-w-4xl p-4 text-white! flex flex-col items-center justify-center mt-4">
+            <p> Horário de funcionamento: seg a sex das xx:xx ás xx:xx</p>
           </div>
         </div>
       </div>

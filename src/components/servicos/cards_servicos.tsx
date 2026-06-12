@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { AgendaInline } from "@/pages/AgendaInline";
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
+export type Categoria = "Facial" | "Corporal" | "Massoterapia";
+
 export interface Servico {
   id: number;
   nome: string;
@@ -11,7 +13,16 @@ export interface Servico {
   duracao: number;
   preco: number;
   imagem: string;
+  categoria: Categoria;
 }
+
+// ─── filtros ──────────────────────────────────────────────────────────────────
+const filtros: { label: string; value: Categoria | "Todos" }[] = [
+  { label: "Ver tudo", value: "Todos" },
+  { label: "Facial", value: "Facial" },
+  { label: "Corporal", value: "Corporal" },
+  { label: "Massoterapia", value: "Massoterapia" },
+];
 
 // ─── dados mock ───────────────────────────────────────────────────────────────
 const items: Servico[] = [
@@ -23,6 +34,7 @@ const items: Servico[] = [
     duracao: 60,
     preco: 120,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Limpeza+de+pele",
+    categoria: "Facial",
   },
   {
     id: 2,
@@ -32,6 +44,7 @@ const items: Servico[] = [
     duracao: 90,
     preco: 250,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Massagem",
+    categoria: "Facial",
   },
   {
     id: 3,
@@ -41,6 +54,7 @@ const items: Servico[] = [
     duracao: 30,
     preco: 50,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha",
+    categoria: "Facial",
   },
   {
     id: 4,
@@ -50,6 +64,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 60,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Facial",
   },
   {
     id: 5,
@@ -59,6 +74,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 150,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Facial",
   },
   {
     id: 6,
@@ -68,6 +84,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 100,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 7,
@@ -77,6 +94,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 100,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 8,
@@ -86,6 +104,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 100,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 9,
@@ -95,15 +114,17 @@ const items: Servico[] = [
     duracao: 45,
     preco: 65,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Facial",
   },
   {
     id: 10,
     nome: "Ultrassom terapêutico 1 - 3MHz",
     descricao:
-      "Equipamento de ultrassom terapêutico com frequ^Çencias de 1MHz e 3MHz, utilizado para tratamentos estéticos e terapêuticos, promovendo benefícios como melhora da circulação, redução de inchaços e estímulo à regeneração celular.",
+      "Equipamento de ultrassom terapêutico com frequências de 1MHz e 3MHz, utilizado para tratamentos estéticos e terapêuticos, promovendo benefícios como melhora da circulação, redução de inchaços e estímulo à regeneração celular.",
     duracao: 45,
     preco: 65,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 11,
@@ -113,6 +134,7 @@ const items: Servico[] = [
     duracao: 40,
     preco: 80,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 12,
@@ -122,6 +144,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 55,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Massoterapia",
   },
   {
     id: 13,
@@ -131,6 +154,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 250,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 14,
@@ -140,6 +164,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 100,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Massoterapia",
   },
   {
     id: 15,
@@ -149,6 +174,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 65,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 16,
@@ -158,6 +184,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 130,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Massoterapia",
   },
   {
     id: 17,
@@ -167,6 +194,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 100,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Massoterapia",
   },
   {
     id: 18,
@@ -176,6 +204,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 150,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Massoterapia",
   },
   {
     id: 19,
@@ -185,6 +214,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 110,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Facial",
   },
   {
     id: 20,
@@ -194,6 +224,7 @@ const items: Servico[] = [
     duracao: 45,
     preco: 0,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Corporal",
   },
   {
     id: 21,
@@ -203,12 +234,14 @@ const items: Servico[] = [
     duracao: 45,
     preco: 120,
     imagem: "https://placehold.co/500x400/FFC0CB/FFFFFF?text=Sobrancelha+Luxo",
+    categoria: "Facial",
   },
 ];
 
 // ─── componente ───────────────────────────────────────────────────────────────
 export function CardServicos() {
   const [servicoAtivo, setServicoAtivo] = useState<Servico | null>(null);
+  const [filtroAtivo, setFiltroAtivo] = useState<Categoria | "Todos">("Todos");
   const agendaRef = useRef<HTMLDivElement>(null);
 
   // Scroll suave para a seção de agenda ao abrir
@@ -228,19 +261,48 @@ export function CardServicos() {
     setServicoAtivo((prev) => (prev?.id === servico.id ? null : servico));
   }
 
+  const itensFiltrados =
+    filtroAtivo === "Todos"
+      ? items
+      : items.filter((item) => item.categoria === filtroAtivo);
+
   return (
     <div className="w-full py-10 px-4 lg:px-20 bg-white/30 backdrop-blur-lg rounded-2xl shadow-xl mt-10">
       {/* Cabeçalho */}
-      <div className="mb-10 flex items-start flex-col">
-        <h1 className="text-4xl font-semibold">Meus serviços</h1>
-        <p className="text-gray-600 mt-2">
-          Escolha uma categoria para visualizar mais serviços
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <div className="flex items-start flex-col">
+          <h1 className="text-4xl font-semibold">Meus serviços</h1>
+          <p className="text-gray-600 mt-2">
+            Escolha uma categoria para visualizar mais serviços
+          </p>
+        </div>
+
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-2 md:justify-end">
+          {filtros.map((filtro) => {
+            const ativo = filtroAtivo === filtro.value;
+
+            return (
+              <Button
+                key={filtro.value}
+                variant="outline"
+                onClick={() => setFiltroAtivo(filtro.value)}
+                className={`cursor-pointer rounded-full border-0 px-5 py-2 text-base transition-colors shadow ${
+                  ativo
+                    ? "bg-button text-white hover:bg-buttonhover"
+                    : "bg-white/70 text-foreground hover:bg-white"
+                }`}
+              >
+                {filtro.label}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Grid de cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {items.map((item) => {
+        {itensFiltrados.map((item) => {
           const ativo = servicoAtivo?.id === item.id;
 
           return (

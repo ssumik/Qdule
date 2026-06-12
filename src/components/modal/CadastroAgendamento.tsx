@@ -76,14 +76,14 @@ export function CadastroAgendamento({
           </p>
         </div>
 
-        <div className="bg-accent rounded-xl px-4 py-3 flex flex-col sm:flex-row items-center gap-2 text-white w-full sm:w-auto justify-center">
-          <span className="font-bold">
+        <div className="bg-accent rounded-xl px-4 py-3 items-center text-center gap-3 text-white w-full sm:w-auto justify-center">
+          <span className="font-bold p-2">
             {dia}/{mes}
           </span>
 
-          <span className="hidden sm:block font-semibold">|</span>
+          <span className="sm:block font-semibold p-2"></span>
 
-          <span className="font-bold">{horario}h</span>
+          <span className="font-bold p-2">{horario}h</span>
         </div>
       </div>
 
