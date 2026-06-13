@@ -41,6 +41,14 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
   const horarios = diaNum ? (mockHorarios[diaNum] ?? []) : [];
 
+  // ─── Dias sem horário disponível ──────────────────────────────────
+
+  function isDiaIndisponivel(day: Date): boolean {
+    const diaNum = day.getDate();
+    const horariosDoDia = mockHorarios[diaNum] ?? [];
+    return horariosDoDia.length === 0;
+  }
+
   function handleSelectDate(novaData: Date | undefined) {
     setDate(novaData);
     setHorarioSelecionado(null);
@@ -103,7 +111,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent text-white text-xs font-bold">
               1
             </span>
-            Escolha o dia
+            Escolha um dia disponível
           </h3>
 
           <div className="w-fit mx-auto p-3 bg-white/70 rounded-xl border border-red-50 shadow-sm">
@@ -113,10 +121,11 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
               onSelect={handleSelectDate}
               captionLayout="dropdown"
               locale={ptBR}
-              disabled={{
-                before: new Date(),
-                after: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-              }}
+              disabled={[
+                { before: new Date() },
+                { after: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) },
+                isDiaIndisponivel,
+              ]}
             />
           </div>
 

@@ -55,6 +55,15 @@ export function CadastroAgendamento({
     setValue("celular", formatado);
   }
 
+  function handleFormSubmit(dados: {
+    nome: string;
+    email: string;
+    celular: string;
+  }) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    onSubmit(dados);
+  }
+
   return (
     <>
       <h2 className="text-xl font-semibold leading-tight text-left">
@@ -87,7 +96,10 @@ export function CadastroAgendamento({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 mt-2">
+      <form
+        onSubmit={handleSubmit(handleFormSubmit)}
+        className="grid gap-4 mt-2"
+      >
         <div className="grid gap-2">
           <Label className="font-bold text-sm">Nome Completo</Label>
 
