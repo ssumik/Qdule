@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/admin/Sidebar";
 import { Acompanhamento } from "@/components/admin/Acompanhamento";
-import { Servicos } from "@/components/admin/Servicos";
+import { Servicos } from "@/components/admin/CadastroServicos";
 import { Configuracoes } from "@/components/admin/Configuracoes";
 import { ConfigHorarios } from "@/components/admin/ConfigHorarios";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";

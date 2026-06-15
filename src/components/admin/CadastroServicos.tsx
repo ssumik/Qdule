@@ -90,7 +90,7 @@ export function Servicos() {
 
       <div className="border border-border rounded-xl overflow-hidden bg-background">
         {/* Header */}
-        <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-4 py-2.5 bg-muted/40 border-b border-border">
+        <div className="grid grid-cols-[2fr_1fr_1fr_80px] px-4 py-2.5 bg-primary/40 border-b border-border">
           <span className="text-xs font-medium text-muted-foreground">
             Nome
           </span>

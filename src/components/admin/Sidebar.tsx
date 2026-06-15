@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Scissors, Settings, Menu, X, Clock } from "lucide-react";
+import { Calendar, Settings, Menu, X, Clock, MirrorRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminPage } from "@/pages/admin-dashboard/Admin";
 
@@ -22,7 +22,7 @@ const navItems: { id: AdminPage; label: string; icon: React.ReactNode }[] = [
   {
     id: "servicos",
     label: "Serviços",
-    icon: <Scissors className="w-4 h-4" />,
+    icon: <MirrorRound className="w-4 h-4" />,
   },
   {
     id: "configuracoes",
