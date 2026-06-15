@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -34,7 +34,7 @@ interface DiaPadrao {
   slots: SlotPadrao[];
 }
 
-interface ExcecaoDia {
+export interface ExcecaoDia {
   date: Date;
   tipo: "folga" | "horario_especial";
   slots: SlotPadrao[];
@@ -138,7 +138,7 @@ function SectionCard({
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -153,9 +153,12 @@ function SectionCard({
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
+interface ConfigHorariosProps {
+  excecoes: ExcecaoDia[];
+  onChange: (excecoes: ExcecaoDia[]) => void;
+}
 
-export function ConfigHorarios() {
+export function ConfigHorarios({ excecoes, onChange }: ConfigHorariosProps) {
   // Horário padrão por dia da semana
   const [padrao, setPadrao] = useState<Record<DiaSemana, DiaPadrao>>({
     Dom: { ativo: false, slots: [] },
@@ -166,9 +169,6 @@ export function ConfigHorarios() {
     Sex: { ativo: true, slots: [{ inicio: "08:00", fim: "18:00" }] },
     Sáb: { ativo: true, slots: [{ inicio: "09:00", fim: "14:00" }] },
   });
-
-  // Exceções por data
-  const [excecoes, setExcecoes] = useState<ExcecaoDia[]>([]);
 
   // Dialog de nova exceção
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -230,22 +230,23 @@ export function ConfigHorarios() {
 
   function saveExcecao() {
     if (!excDate) return;
-    setExcecoes((prev) => {
-      const sem = prev.filter((e) => !isSameDay(e.date, excDate));
-      return [
-        ...sem,
-        {
-          date: excDate,
-          tipo: excTipo,
-          slots: excTipo === "folga" ? [] : excSlots,
-        },
-      ];
-    });
+
+    const sem = excecoes.filter((e) => !isSameDay(e.date, excDate));
+
+    onChange([
+      ...sem,
+      {
+        date: excDate,
+        tipo: excTipo,
+        slots: excTipo === "folga" ? [] : excSlots,
+      },
+    ]);
+
     setDialogOpen(false);
   }
 
   function removeExcecao(date: Date) {
-    setExcecoes((prev) => prev.filter((e) => !isSameDay(e.date, date)));
+    onChange(excecoes.filter((e) => !isSameDay(e.date, date)));
   }
 
   const excDates = excecoes.map((e) => e.date);
@@ -421,8 +422,8 @@ export function ConfigHorarios() {
                   className={cn(
                     "flex-1 py-2 rounded-lg border text-sm transition-colors",
                     excTipo === "folga"
-                      ? "border-primary bg-primary/10 text-primary font-medium"
-                      : "border-border text-accent bg-accenthover:bg-muted",
+                      ? "bg-ring text-white font-medium"
+                      : "border-secondary text-ring hover:bg-primary",
                   )}
                 >
                   Folga
@@ -432,8 +433,8 @@ export function ConfigHorarios() {
                   className={cn(
                     "flex-1 py-2 rounded-lg border text-sm transition-colors",
                     excTipo === "horario_especial"
-                      ? "border-primary bg-primary/10 text-primary font-medium"
-                      : "border-border text-muted-foreground hover:bg-muted",
+                      ? "bg-ring text-white font-medium"
+                      : "border-secondary text-ring hover:bg-primary",
                   )}
                 >
                   Horário especial

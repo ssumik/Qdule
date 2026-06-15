@@ -3,6 +3,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { ptBR } from "date-fns/locale";
 import { mockAgenda } from "@/components/admin/mockData";
+import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
 
 function MetricCard({
   label,
@@ -22,7 +23,11 @@ function MetricCard({
   );
 }
 
-export function Acompanhamento() {
+interface AcompanhamentoProps {
+  excecoes: ExcecaoDia[];
+}
+
+export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
   const today = new Date();
   const [date, setDate] = useState<Date | undefined>(today);
 
@@ -46,6 +51,19 @@ export function Acompanhamento() {
 
   const todayAgendamentos = mockAgenda[today.getDate()] ?? [];
   const daysWithEvents = Object.keys(mockAgenda).map(Number);
+
+  // verifica se o dia selecionado é folga
+  const excecaoDoDia = excecoes.find((e) => date && isSameDay(e.date, date));
+  const isFolga = excecaoDoDia?.tipo === "folga";
+
+  // helper (mesma função do ConfigHorarios)
+  function isSameDay(a: Date, b: Date) {
+    return (
+      a.getDate() === b.getDate() &&
+      a.getMonth() === b.getMonth() &&
+      a.getFullYear() === b.getFullYear()
+    );
+  }
 
   return (
     <div className="p-6 flex flex-col gap-6">
@@ -126,11 +144,22 @@ export function Acompanhamento() {
           </div>
 
           <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-            {agendamentos.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhum agendamento para este dia.
-              </p>
-            )}
+            {agendamentos.length === 0 &&
+              (isFolga ? (
+                <div className="flex flex-col items-center gap-2 py-8">
+                  <span className="text-2xl">🌿</span>
+                  <p className="text-sm font-medium text-foreground">
+                    Dia de folga
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum atendimento programado para este dia.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhum agendamento para este dia.
+                </p>
+              ))}
 
             {agendamentos.map((a, i) => (
               <div
