@@ -73,14 +73,14 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
   }
 
   return (
-    <div className="w-full rounded-2xl bg-ring/20 backdrop-blur-lg border border-red-100 shadow-xl p-6 md:p-8">
+    <div className="w-full rounded-2xl bg-primary/30 backdrop-blur-lg border border-red-100 shadow-xl p-6 md:p-8">
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             onClick={onFechar}
-            className="p-0 h-auto cursor-pointer text-red-400 hover:text-red-600"
+            className="p-0 h-auto cursor-pointer text-accent hover:text-red-600"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
