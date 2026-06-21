@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
 import { ptBR } from "date-fns/locale";
 import { mockAgenda } from "@/components/admin/mockData";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
@@ -177,16 +176,6 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
                     {a.service}
                   </p>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className={
-                    a.status === "confirmed"
-                      ? "bg-green-100 text-green-800 hover:bg-green-100"
-                      : "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                  }
-                >
-                  {a.status === "confirmed" ? "Confirmado" : "Pendente"}
-                </Badge>
               </div>
             ))}
           </div>

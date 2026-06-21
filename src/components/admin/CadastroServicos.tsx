@@ -277,7 +277,7 @@ export function Servicos() {
             <div className="grid gap-2">
               <Label>Nome</Label>
               <Input
-                placeholder="Ex: Corte feminino"
+                placeholder="Ex: Massagem"
                 value={form.nome}
                 onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
               />
