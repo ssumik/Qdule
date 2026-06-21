@@ -47,6 +47,7 @@ export function Servicos() {
   const [servicos, setServicos] = useState<ServicoCompleto[]>(mockServicos);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ServicoCompleto | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ServicoCompleto | null>(null);
   const [form, setForm] = useState<FormState>({
     nome: "",
     duracao: "",
@@ -124,8 +125,14 @@ export function Servicos() {
     setDialogOpen(false);
   }
 
-  function handleDelete(id: number) {
-    setServicos((prev) => prev.filter((s) => s.id !== id));
+  function confirmDelete(s: ServicoCompleto) {
+    setDeleteTarget(s);
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    setServicos((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+    setDeleteTarget(null);
   }
 
   return (
@@ -208,7 +215,7 @@ export function Servicos() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-destructive hover:text-destructive"
-                onClick={() => handleDelete(s.id)}
+                onClick={() => confirmDelete(s)}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
@@ -366,6 +373,29 @@ export function Servicos() {
             </Button>
             <Button onClick={handleSave}>
               {editing ? "Salvar alterações" : "Cadastrar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir serviço</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            Tem certeza que quer excluir{" "}
+            <span className="font-medium text-foreground">{deleteTarget?.nome}</span>?
+            Essa ação não pode ser desfeita.
+          </p>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

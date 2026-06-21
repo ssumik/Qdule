@@ -11,7 +11,7 @@ function ConfigSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-border rounded-xl overflow-hidden bg-primary/20">
+    <div className="border border-border rounded-xl overflow-hidden bg-background">
       <div className="px-4 py-3 bg-primary/40 border-b border-border">
         <p className="text-sm font-medium text-black">{title}</p>
       </div>
@@ -45,8 +45,8 @@ function ConfigRow({
 }
 
 export function Configuracoes() {
-  const [nome, setNome] = useState("Studio Exemplo");
   const [email, setEmail] = useState("contato@studio.com");
+  const [password, setPassword] = useState("");
   const [emailConfirmacao, setEmailConfirmacao] = useState(true);
   const [lembrete, setLembrete] = useState(true);
   const [alertaCancelamento, setAlertaCancelamento] = useState(false);
@@ -54,7 +54,7 @@ export function Configuracoes() {
   return (
     <div className="p-6 flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold text-foreground">Configurações</h1>
+        <h2 className="text-lg font-semibold text-foreground">Configurações</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
           Preferências do estabelecimento
         </p>
@@ -62,24 +62,25 @@ export function Configuracoes() {
 
       <ConfigSection title="Estabelecimento">
         <ConfigRow
-          label="Nome do salão"
-          description="Aparece para os clientes na hora do agendamento"
-        >
-          <Input
-            className="w-48"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-          />
-        </ConfigRow>
-        <ConfigRow
-          label="E-mail de contato"
+           label="E-mail de contato"
           description="Usado para receber notificações"
         >
           <Input
             type="email"
-            className="w-48"
+            className="w-48 bg-white"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+        </ConfigRow>
+        <ConfigRow
+          label="Senha de acesso"
+          description="Alterar senha de admin"
+        >
+          <Input
+            type="password"
+            className="w-48 bg-white"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
         </ConfigRow>
       </ConfigSection>

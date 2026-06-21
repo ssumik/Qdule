@@ -97,14 +97,14 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             <p className="text-sm font-medium text-foreground">Calendário</p>
           </div>
 
-          <div className="p-2 sm:p-3">
+          <div className="p-2 sm:p-3 flex justify-center bg-background">
             <Calendar
               mode="single"
               selected={date}
               onSelect={setDate}
               locale={ptBR}
               captionLayout="dropdown"
-              className="w-full"
+              className="[--cell-size:2.5rem] sm:[--cell-size:3rem] md:[--cell-size:3.5rem]"
               modifiers={{
                 hasEvents: (d) => daysWithEvents.includes(d.getDate()),
               }}
@@ -112,18 +112,9 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
                 hasEvents:
                   "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-ring",
               }}
-              classNames={{
-                month: "w-full",
-                table: "w-full",
-                day: `
-                  h-10 w-10
-                  sm:h-12 sm:w-12
-                  md:h-14 md:w-14
-                  text-sm sm:text-base
-                `,
-              }}
             />
           </div>
+          
           <div className="px-4 py-3 border-t border-border bg-muted/40">
             <p className="text-sm text-muted-foreground">
               *Dias marcados possuem pelo menos 1 agendamento.
@@ -132,7 +123,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
         </div>
 
         {/* Agenda do dia */}
-        <div className="border border-border rounded-xl overflow-hidden flex flex-col">
+        <div className="border border-border rounded-xl overflow-hidden flex flex-col bg-background">
           <div className="px-4 py-3 border-b border-border bg-primary/40">
             <p className="text-sm font-medium text-foreground capitalize">
               {dayLabel}
@@ -163,7 +154,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             {agendamentos.map((a, i) => (
               <div
                 key={i}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors"
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors bg-white"
               >
                 <span className="text-xs text-muted-foreground pt-0.5 min-w-38px">
                   {a.time}
