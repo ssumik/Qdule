@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Calendar, Settings, Menu, X, Clock, MirrorRound } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Calendar, Settings, Menu, X, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminPage } from "@/pages/admin-dashboard/Admin";
 
@@ -8,7 +8,7 @@ interface SidebarProps {
   onChange: (page: AdminPage) => void;
 }
 
-const navItems: { id: AdminPage; label: string; icon: React.ReactNode }[] = [
+const navItems: { id: AdminPage; label: string; icon: ReactNode }[] = [
   {
     id: "acompanhamento",
     label: "Acompanhamento",
@@ -22,7 +22,7 @@ const navItems: { id: AdminPage; label: string; icon: React.ReactNode }[] = [
   {
     id: "servicos",
     label: "Serviços",
-    icon: <MirrorRound className="w-4 h-4" />,
+    icon: <Sparkles className="w-4 h-4" />,
   },
   {
     id: "configuracoes",
@@ -38,6 +38,23 @@ export function Sidebar({ current, onChange }: SidebarProps) {
     onChange(page);
     setMobileOpen(false);
   }
+
+  // Trava o scroll do fundo da página enquanto o drawer mobile está aberto.
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  // Fecha o drawer ao pressionar Esc.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const navContent = (
     <nav className="flex flex-col gap-1 p-2 mt-1">
@@ -62,10 +79,10 @@ export function Sidebar({ current, onChange }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar — visível apenas md+ */}
-      <aside className="hidden md:flex w-52 min-w-208px border-r border-border bg-accent flex-col">
+      <aside className="hidden md:flex w-52 min-w-208px bg-accent flex-col">
         <div className="px-4 py-5">
-          <p className="font-semibold text-sm text-primary">Hanna Kupas</p>
-          <p className="text-xs text-white mt-0.5">Painel de gestão</p>
+          <p className="font-semibold text-sm text-white!">Hanna Kupas</p>
+          <p className="text-xs text-white! mt-0.5">Painel de gestão</p>
         </div>
         {navContent}
       </aside>
@@ -73,35 +90,42 @@ export function Sidebar({ current, onChange }: SidebarProps) {
       {/* Mobile — topbar NO fluxo (não fixed) + drawer sobreposto */}
       <div className="md:hidden flex flex-col w-full">
         {/* Topbar no fluxo: empurra o conteúdo abaixo */}
-        <header className="flex items-center justify-between px-4 h-14 bg-accent border-b border-border">
-          <p className="font-semibold text-sm text-primary">
+        <header className="flex items-center justify-between px-4 h-14 bg-accent">
+          <p className="font-semibold text-sm text-white! truncate">
             Hanna Kupas | Painel de gestão
           </p>
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            className="shrink-0 p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-drawer"
           >
             {mobileOpen ? (
               <X className="w-5 h-5" />
             ) : (
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-white" />
             )}
           </button>
         </header>
 
-        {/* Overlay */}
-        {mobileOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/40"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
+        {/* Overlay — sempre montado, com fade de opacidade sincronizado com o drawer */}
+        <div
+          className={cn(
+            "fixed inset-0 z-30 bg-black/40 transition-opacity duration-200",
+            mobileOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none",
+          )}
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
 
         {/* Drawer deslizante — fixed a partir do topo da topbar (top-14) */}
         <div
+          id="mobile-drawer"
           className={cn(
-            "fixed top-14 left-0 bottom-0 z-40 w-64 bg-accent border-r border-border flex flex-col shadow-lg transition-transform duration-200",
+            "fixed top-14 left-0 bottom-0 z-40 w-64 bg-accent flex flex-col shadow-lg transition-transform duration-200",
             mobileOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
