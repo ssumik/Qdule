@@ -51,7 +51,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="https://facebook.com/seuperfil"
+                href="https://www.facebook.com/esteticahannakupas/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -64,10 +64,10 @@ export default function Footer() {
       </div>
 
       <div className="py-4">
-        <p className="text-center text-sm text-primary">
+        <span className="text-center text-sm text-primary">
           © {new Date().getFullYear()} Estética Hanna Kupas. Todos os direitos
           reservados.
-        </p>
+        </span>
       </div>
     </footer>
   );

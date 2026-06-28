@@ -221,7 +221,7 @@ function CarrosselType({
                     />
                   </div>
                   <CardContent className="flex flex-1 flex-col p-4">
-                    <h3 className="text-base font-semibold leading-snug line-clamp-2 min-h-[3rem]">
+                    <h3 className="text-base font-semibold leading-snug line-clamp-2 min-h-12">
                       {item.name}
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground line-clamp-3">

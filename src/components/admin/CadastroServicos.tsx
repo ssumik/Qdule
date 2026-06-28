@@ -47,7 +47,7 @@ const CATEGORIA_LABEL: Record<TreatmentType, string> = {
 
 type FormState = {
   nome: string;
-  duracao: string; // minutos como string
+  duracao: string;
   preco: string;
   descricao: string;
   categoria: TreatmentType | "";
@@ -64,8 +64,6 @@ const FORM_VAZIO: FormState = {
   imagemUrl: "",
   status: "ACTIVE",
 };
-
-
 
 export function Servicos() {
   const queryClient = useQueryClient();
@@ -89,10 +87,8 @@ export function Servicos() {
 
   const servicos = page?.content ?? [];
 
-
   const onSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["treatments-admin"] });
-    // Invalida também a query usada pelo CardServicos público
     queryClient.invalidateQueries({ queryKey: ["treatments"] });
     setDialogOpen(false);
     setErrorMsg(null);
@@ -151,22 +147,22 @@ export function Servicos() {
   }
 
   async function uploadImage(file: File): Promise<string> {
-  const fileExt = file.name.split(".").pop();
-  const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-  const filePath = `servicos/${fileName}`;
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+    const filePath = `servicos/${fileName}`;
 
-  const { error } = await supabase.storage
-    .from("treatments")
-    .upload(filePath, file);
+    const { error } = await supabase.storage
+      .from("treatments")
+      .upload(filePath, file);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  const { data } = supabase.storage
-    .from("treatments")
-    .getPublicUrl(filePath);
+    const { data } = supabase.storage
+      .from("treatments")
+      .getPublicUrl(filePath);
 
-  return data.publicUrl;
-}
+    return data.publicUrl;
+  }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -174,13 +170,8 @@ export function Servicos() {
 
     try {
       setUploadingImage(true);
-
       const url = await uploadImage(file);
-
-      setForm((f) => ({
-        ...f,
-        imagemUrl: url,
-      }));
+      setForm((f) => ({ ...f, imagemUrl: url }));
     } catch (err) {
       console.error("Erro no upload da imagem:", err);
     } finally {
@@ -223,9 +214,9 @@ export function Servicos() {
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 md:p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
             Cadastro de serviços
@@ -236,7 +227,7 @@ export function Servicos() {
               : `${servicos.length} serviço${servicos.length !== 1 ? "s" : ""} cadastrado${servicos.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        <Button onClick={openNew} className="gap-2">
+        <Button onClick={openNew} className="gap-2 w-full sm:w-auto justify-center">
           <Plus className="w-4 h-4" />
           Novo serviço
         </Button>
@@ -248,144 +239,166 @@ export function Servicos() {
         </p>
       )}
 
-      {/* Tabela */}
-      <div className="border border-border rounded-xl overflow-hidden bg-background">
-        {/* Header */}
-        <div className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_80px] px-4 py-2.5 bg-primary/40 border-b border-border">
-          <span />
-          <span className="text-xs font-medium text-muted-foreground">
-            Nome | Descrição
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            Categoria
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            Duração
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            Preço
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            Status
-          </span>
-          <span className="text-xs font-medium text-muted-foreground">
-            Ações
-          </span>
+      {isLoading && (
+        <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Carregando serviços...
         </div>
+      )}
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Carregando serviços...
+      {/* Vazio */}
+      {!isLoading && servicos.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-10">
+          Nenhum serviço cadastrado.
+        </p>
+      )}
+
+      {/* ── VISÃO DESKTOP (TABELA) ────────────────────────────────────────── */}
+      {!isLoading && servicos.length > 0 && (
+        <div className="hidden md:block border border-border rounded-xl overflow-hidden bg-background">
+          <div className="grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_80px] px-4 py-2.5 bg-primary/40 border-b border-border">
+            <span />
+            <span className="text-xs font-medium text-muted-foreground">Nome | Descrição</span>
+            <span className="text-xs font-medium text-muted-foreground">Categoria</span>
+            <span className="text-xs font-medium text-muted-foreground">Duração</span>
+            <span className="text-xs font-medium text-muted-foreground">Preço</span>
+            <span className="text-xs font-medium text-muted-foreground">Status</span>
+            <span className="text-xs font-medium text-muted-foreground">Ações</span>
           </div>
-        )}
 
-        {/* Vazio */}
-        {!isLoading && servicos.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-10">
-            Nenhum serviço cadastrado.
-          </p>
-        )}
-
-        {/* Linhas */}
-        {servicos.map((s, i) => (
-          <div
-            key={s.id}
-            className={`grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_80px] px-4 py-3 items-center hover:bg-muted/30 transition-colors ${
-              i < servicos.length - 1 ? "border-b border-border" : ""
-            }`}
-          >
-            {/* Thumbnail */}
-            <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0">
-              {s.imagePath ? (
-                <img
-                  src={s.imagePath}
-                  alt={s.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
-              )}
-            </div>
-
-            {/* Nome + Descrição */}
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm text-foreground truncate">{s.name}</span>
-              {s.description && (
-                <span
-                  className="text-xs text-muted-foreground truncate"
-                  title={s.description}
-                >
-                  {s.description.length > 60
-                    ? s.description.slice(0, 60).trimEnd() + "…"
-                    : s.description}
-                </span>
-              )}
-            </div>
-
-            {/* Categoria */}
-            <span className="text-sm text-muted-foreground">
-              {s.type ? (
-                CATEGORIA_LABEL[s.type]
-              ) : (
-                <span className="text-muted-foreground/40 italic">—</span>
-              )}
-            </span>
-
-            {/* Duração */}
-            <span className="text-sm text-muted-foreground">
-              {durationToMinutes(s.duration)} min
-            </span>
-
-            {/* Preço */}
-            <span className="text-sm text-muted-foreground">
-              {s.price === 0
-                ? "Consultar"
-                : `R$ ${s.price.toFixed(2).replace(".", ",")}`}
-            </span>
-
-            {/* Status */}
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit ${
-                s.status === "ACTIVE"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-500"
+          {servicos.map((s, i) => (
+            <div
+              key={s.id}
+              className={`grid grid-cols-[40px_2fr_1fr_1fr_1fr_1fr_80px] px-4 py-3 items-center hover:bg-muted/30 transition-colors ${
+                i < servicos.length - 1 ? "border-b border-border" : ""
               }`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  s.status === "ACTIVE" ? "bg-green-500" : "bg-gray-400"
-                }`}
-              />
-              {s.status === "ACTIVE" ? "Ativo" : "Inativo"}
-            </span>
+              <div className="w-8 h-8 rounded-md overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                {s.imagePath ? (
+                  <img src={s.imagePath} alt={s.name} className="w-full h-full object-cover" />
+                ) : (
+                  <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
+                )}
+              </div>
 
-            {/* Ações */}
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => openEdit(s)}
+              <div className="flex flex-col min-w-0 pr-2">
+                <span className="text-sm text-foreground truncate">{s.name}</span>
+                {s.description && (
+                  <span className="text-xs text-muted-foreground truncate" title={s.description}>
+                    {s.description}
+                  </span>
+                )}
+              </div>
+
+              <span className="text-sm text-muted-foreground">
+                {s.type ? CATEGORIA_LABEL[s.type] : <span className="text-muted-foreground/40 italic">—</span>}
+              </span>
+
+              <span className="text-sm text-muted-foreground">{durationToMinutes(s.duration)} min</span>
+
+              <span className="text-sm text-muted-foreground">
+                {s.price === 0 ? "Consultar" : `R$ ${s.price.toFixed(2).replace(".", ",")}`}
+              </span>
+
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit ${
+                  s.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                }`}
               >
-                <Pencil className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive"
-                onClick={() => setDeleteTarget(s)}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+                <span className={`w-1.5 h-1.5 rounded-full ${s.status === "ACTIVE" ? "bg-green-500" : "bg-gray-400"}`} />
+                {s.status === "ACTIVE" ? "Ativo" : "Inativo"}
+              </span>
+
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(s)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(s)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── VISÃO MOBILE (CARDS) ───────────────────────────────────────────── */}
+      {!isLoading && servicos.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:hidden">
+          {servicos.map((s) => (
+            <div key={s.id} className="border border-border rounded-xl p-4 bg-background flex flex-col gap-3 shadow-sm relative">
+              
+              {/* Badge de Status no topo direito */}
+              <div className="absolute top-4 right-4">
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                    s.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${s.status === "ACTIVE" ? "bg-green-500" : "bg-gray-400"}`} />
+                  {s.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                </span>
+              </div>
+
+              {/* Informações Principais */}
+              <div className="flex gap-3 items-start">
+                <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                  {s.imagePath ? (
+                    <img src={s.imagePath} alt={s.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+
+                <div className="flex flex-col min-w-0 pl-5">
+                  <span className="text-base font-bold text-accent truncate">{s.name}</span>
+                  <span className="text-xs text-accent font-medium mt-0.5">
+                    {s.type ? CATEGORIA_LABEL[s.type] : "Sem categoria"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              {s.description && (
+                <span className="text-xs font-medium text-gray-500 p-2">
+                  {s.description}
+                </span>
+              )}
+
+              {/* Detalhes de Preço e Tempo */}
+              <div className="flex items-center justify-between pt-2.5 mt-1 text-sm">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground">Duração</span>
+                  <span className="font-semibold text-foreground">{durationToMinutes(s.duration)} min</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-muted-foreground">Preço</span>
+                  <span className="font-semibold text-foreground">
+                    {s.price === 0 ? "Consultar" : `R$ ${s.price.toFixed(2).replace(".", ",")}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="flex gap-2 border-t border-border pt-2 mt-1">
+                <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 bg-white" onClick={() => openEdit(s)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                  Editar
+                </Button>
+                <Button variant="outline" size="sm" className="flex-1 gap-1.5 h-9 border-destructive text-destructive bg-white" onClick={() => setDeleteTarget(s)}>
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Dialog criar / editar ─────────────────────────────────────────────── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        {/* Adicionado max-w-[92vw] e sm:max-w-md para não quebrar no mobile */}
+        <DialogContent className="max-w-[92vw] sm:max-w-md rounded-xl p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Editar serviço" : "Novo serviço"}
@@ -422,7 +435,7 @@ export function Servicos() {
                     className="w-full h-full object-cover"
                   />
 
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <div className="absolute inset-0 bg-black/40 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -447,10 +460,10 @@ export function Servicos() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   style={{ aspectRatio: "5 / 4" }}
-                  className="w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground"
+                  className="w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors flex flex-col items-center justify-center gap-2 text-muted-foreground p-4"
                 >
                   <ImagePlus className="w-6 h-6" />
-                  <span className="text-sm">
+                  <span className="text-sm text-center">
                     Clique para adicionar uma imagem
                   </span>
                 </button>
@@ -487,7 +500,7 @@ export function Servicos() {
                           : "text-muted-foreground"
                       }`}
                     >
-                      {restante} caracteres restantes
+                      {restante} caracteres
                     </span>
                   </div>
                   <Textarea
@@ -498,9 +511,7 @@ export function Servicos() {
                       setForm((f) => ({ ...f, descricao: e.target.value }))
                     }
                     className={`resize-none h-20 transition-colors ${
-                      restante === 0
-                        ? "border-destructive focus-visible:ring-destructive"
-                        : ""
+                      restante === 0 ? "border-destructive focus-visible:ring-destructive" : ""
                     }`}
                   />
                 </div>
@@ -531,7 +542,7 @@ export function Servicos() {
               </Select>
             </div>
 
-            {/* Duração, Preço e Status */}
+            {/* Duração e Preço */}
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <Label>
@@ -540,7 +551,7 @@ export function Servicos() {
                 <Input
                   type="number"
                   min={1}
-                  placeholder="45"
+                  placeholder="Ex: 120"
                   value={form.duracao}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, duracao: e.target.value }))
@@ -554,7 +565,7 @@ export function Servicos() {
                 <Input
                   type="number"
                   min={0}
-                  placeholder="80"
+                  placeholder="Ex: 80"
                   value={form.preco}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, preco: e.target.value }))
@@ -585,23 +596,23 @@ export function Servicos() {
               </Select>
             </div>
 
-            {/* Erro */}
             {errorMsg && (
-              <p className="text-sm text-destructive rounded-md bg-destructive/10 px-3 py-2">
+              <p className="text-sm text-destructive rounded-md px-3 py-2">
                 {errorMsg}
               </p>
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-2">
             <Button
               variant="outline"
               onClick={() => setDialogOpen(false)}
               disabled={isSaving}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+            <Button onClick={handleSave} disabled={isSaving} className="gap-2 w-full sm:w-auto justify-center">
               {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {editing ? "Salvar alterações" : "Cadastrar"}
             </Button>
@@ -614,12 +625,12 @@ export function Servicos() {
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[92vw] sm:max-w-sm rounded-xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Excluir serviço</DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground py-2">
             Tem certeza que quer excluir{" "}
             <span className="font-medium text-foreground">
               {deleteTarget?.name}
@@ -627,11 +638,12 @@ export function Servicos() {
             ? Essa ação não pode ser desfeita.
           </p>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setDeleteTarget(null)}
               disabled={deleteMutation.isPending}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
@@ -639,7 +651,7 @@ export function Servicos() {
               variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto justify-center"
             >
               {deleteMutation.isPending && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
