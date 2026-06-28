@@ -4,7 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
-import type { Servico } from "@/components/servicos/cards_servicos";
+import type { Treatment } from "@/components/servicos/cards_servicos";
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
 
 // ─── mock de horários ─────────────────────────────────────────────────
@@ -16,7 +16,7 @@ const mockHorarios: Record<number, string[]> = {
 };
 
 interface AgendaInlineProps {
-  servico: Servico;
+  servico: Treatment;
   onFechar: () => void;
 }
 
@@ -97,10 +97,10 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
           Serviço selecionado
         </p>
 
-        <h2 className="text-2xl font-bold mt-1">{servico.nome}</h2>
+        <h2 className="text-2xl font-bold mt-1">{servico.name}</h2>
 
         <p className="text-sm mt-1 font-medium text-muted-foreground">
-          R$ {servico.preco} • {servico.duracao} min
+          R$ {servico.price} • {servico.duration} min
         </p>
       </div>
 

@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import type { Servico } from "@/components/servicos/cards_servicos";
+import type { Treatment } from "@/components/servicos/cards_servicos";
 
 interface CadastroAgendamentoProps {
-  servico: Servico;
+  servico: Treatment;
   dia: string | null;
   mes: string | null;
   horario: string | null;
@@ -76,12 +76,12 @@ export function CadastroAgendamento({
           <p className="text-sm text-black">Você selecionou o serviço:</p>
 
           <h2 className="font-bold text-accent wrap-break-words">
-            {servico?.nome}
+            {servico?.name}
           </h2>
 
           <p className="text-sm text-accent">
-            R$ {Number(servico?.preco).toFixed(2).replace(".", ",")} •{" "}
-            {servico?.duracao} min
+            R$ {Number(servico?.price).toFixed(2).replace(".", ",")} •{" "}
+            {servico?.duration} min
           </p>
         </div>
 
