@@ -80,14 +80,13 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
         <MetricCard
           label="Hoje"
           value={String(todayAgendamentos.length)}
           sub="agendamentos"
         />
         <MetricCard label="Esta semana" value="18" sub="agendamentos" />
-        <MetricCard label="Receita estimada" value="R$ 920" sub="esta semana" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
