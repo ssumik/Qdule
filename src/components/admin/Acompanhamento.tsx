@@ -1,8 +1,19 @@
+//ainda sem integração com o backend
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { mockAgenda } from "@/components/admin/mockData";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 function MetricCard({
   label,
@@ -22,6 +33,14 @@ function MetricCard({
   );
 }
 
+interface Agendamento {
+  time: string;
+  name: string;
+  service: string;
+  phone?: string;  
+  email?: string;  
+}
+
 interface AcompanhamentoProps {
   excecoes: ExcecaoDia[];
 }
@@ -29,6 +48,9 @@ interface AcompanhamentoProps {
 export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
   const today = new Date();
   const [date, setDate] = useState<Date | undefined>(today);
+  
+  // Estado para armazenar o agendamento selecionado para o modal
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
 
   const dayNum = date?.getDate();
   const agendamentos = dayNum ? (mockAgenda[dayNum] ?? []) : [];
@@ -63,6 +85,18 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
       a.getFullYear() === b.getFullYear()
     );
   }
+
+  // Função para lidar com o cancelamento
+  const handleCancelAgendamento = (agendamento: Agendamento) => {
+    const confirmar = window.confirm(`Tem certeza que deseja cancelar o agendamento de ${agendamento.name}?`);
+    if (confirmar) {
+      // TODO: Integrar com sua API/Backend ou atualizar o estado local do mockAgenda
+      console.log("Cancelando agendamento:", agendamento);
+      
+      // Fecha o modal após cancelar
+      setSelectedAgendamento(null);
+    }
+  };
 
   return (
     <div className="p-6 flex flex-col gap-6">
@@ -114,7 +148,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             />
           </div>
           
-          <div className="px-4 py-3 border-t border-border bg-muted/40">
+          <div className="px-4 py-3 border-t border-border bg-white/40">
             <p className="text-sm text-muted-foreground">
               *Dias marcados possuem pelo menos 1 agendamento.
             </p>
@@ -150,12 +184,13 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
                 </p>
               ))}
 
-            {agendamentos.map((a, i) => (
+            {agendamentos.map((a: Agendamento, i: number) => (
               <div
                 key={i}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors bg-white"
+                onClick={() => setSelectedAgendamento(a)} // Abre o modal ao clicar no card
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors bg-white cursor-pointer"
               >
-                <span className="text-xs text-muted-foreground pt-0.5 min-w-38px">
+                <span className="text-xs text-muted-foreground pt-0.5 min-w-9.5">
                   {a.time}
                 </span>
                 <div className="flex-1 min-w-0">
@@ -169,8 +204,73 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
               </div>
             ))}
           </div>
+          <div className="px-4 py-3 border-t border-border bg-white/60">
+            <p className="text-sm text-muted-foreground">
+              Selecione um cliente para mais infos
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Modal de Detalhes do Agendamento */}
+      <Dialog open={!!selectedAgendamento} onOpenChange={(open) => !open && setSelectedAgendamento(null)}>
+        <DialogContent className="sm:max-w-106.25">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            <DialogDescription>
+              Informações do cliente e gerenciamento do horário.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAgendamento && (
+            <div className="grid gap-4 py-4 text-sm">
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">Cliente:</span>
+                <span className="col-span-3 text-foreground font-medium">{selectedAgendamento.name}</span>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">Telefone:</span>
+                <span className="col-span-3 text-foreground">{selectedAgendamento.phone || "(47) 99999-9999"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">E-mail:</span>
+                <span className="col-span-3 text-foreground break-all">{selectedAgendamento.email || "cliente@email.com"}</span>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">Serviço:</span>
+                <span className="col-span-3 text-foreground">{selectedAgendamento.service}</span>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">Data:</span>
+                <span className="col-span-3 text-foreground">Dia aqui</span>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <span className="font-semibold text-muted-foreground text-right">Horário:</span>
+                <span className="col-span-3 text-foreground">{selectedAgendamento.time}</span>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedAgendamento(null)}
+              className="w-full sm:w-auto"
+            >
+              Fechar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => selectedAgendamento && handleCancelAgendamento(selectedAgendamento)}
+              className="w-full sm:w-auto"
+            >
+              Cancelar Agendamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
