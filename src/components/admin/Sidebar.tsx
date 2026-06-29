@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Calendar, Settings, Menu, X, Clock, Sparkles } from "lucide-react";
+import { Calendar, Menu, X, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminPage } from "@/pages/admin-dashboard/Admin";
 
@@ -23,11 +23,6 @@ const navItems: { id: AdminPage; label: string; icon: ReactNode }[] = [
     id: "servicos",
     label: "Serviços",
     icon: <Sparkles className="w-4 h-4" />,
-  },
-  {
-    id: "configuracoes",
-    label: "Configurações",
-    icon: <Settings className="w-4 h-4" />,
   },
 ];
 
