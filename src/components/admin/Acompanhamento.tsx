@@ -1,19 +1,19 @@
-//ainda sem integração com o backend
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import { mockAgenda } from "@/components/admin/mockData";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
+import { ScheduledTreatments } from "@/requests/CalendarRequest";
+import { type CalendarResponse } from "@joao.sumi/qdule";
+import { useQuery } from "@tanstack/react-query";
+import { TreatmentById as GetTreatmentById } from "@/requests/TreatmentRequest";
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 
 function MetricCard({
   label,
@@ -33,27 +33,132 @@ function MetricCard({
   );
 }
 
-interface Agendamento {
-  time: string;
-  name: string;
-  service: string;
-  phone?: string;  
-  email?: string;  
-}
-
 interface AcompanhamentoProps {
   excecoes: ExcecaoDia[];
+}
+
+type AppointmentInfo = {
+  time: string;
+  date: string;
+  treatmentId?: number;
+};
+
+function ScheduleOption({
+  info,
+  onSelect,
+}: {
+  info: AppointmentInfo;
+  onSelect: (info: AppointmentInfo) => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["treatment", info.treatmentId],
+    queryFn: () => GetTreatmentById(info.treatmentId!),
+    enabled: info.treatmentId !== undefined,
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(info)}
+      className="flex w-full items-start gap-3 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/40"
+    >
+      <span className="min-w-10 pt-0.5 text-xs text-muted-foreground">
+        {info.time}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">
+          {isLoading ? "Carregando..." : (data?.name ?? "Agendamento")}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {info.treatmentId
+            ? `Tratamento #${info.treatmentId}`
+            : "Tratamento não informado"}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function AppointmentDetails({ info }: { info: AppointmentInfo }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["treatment", info.treatmentId],
+    queryFn: () => GetTreatmentById(info.treatmentId!),
+    enabled: info.treatmentId !== undefined,
+  });
+
+  return (
+    <div className="grid gap-4 py-4 text-sm">
+      <DetailRow label="Tratamento">
+        {isLoading ? "Carregando..." : (data?.name ?? "Não informado")}
+      </DetailRow>
+      {data?.duration && <DetailRow label="Duração">{data.duration}</DetailRow>}
+      {data?.price !== undefined && (
+        <DetailRow label="Valor">
+          {data.price.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        </DetailRow>
+      )}
+      <DetailRow label="Data">{formatDateLabel(info.date)}</DetailRow>
+      <DetailRow label="Horário">{info.time}</DetailRow>
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-4 items-start gap-4">
+      <span className="text-right font-semibold text-muted-foreground">
+        {label}:
+      </span>
+      <span className="col-span-3 text-foreground">{children}</span>
+    </div>
+  );
+}
+
+function formatDateLabel(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
   const today = new Date();
   const [date, setDate] = useState<Date | undefined>(today);
-  
-  // Estado para armazenar o agendamento selecionado para o modal
-  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
+  const [visibleMonth, setVisibleMonth] = useState(today);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentInfo | null>(null);
 
-  const dayNum = date?.getDate();
-  const agendamentos = dayNum ? (mockAgenda[dayNum] ?? []) : [];
+  const { data, isLoading } = useQuery({
+    queryKey: [
+      "scheduled_treatments",
+      visibleMonth.getFullYear(),
+      visibleMonth.getMonth() + 1,
+    ],
+    queryFn: () =>
+      ScheduledTreatments(
+        visibleMonth.getFullYear(),
+        visibleMonth.getMonth() + 1,
+      ),
+  });
+
+  const scheduledTreatments = data?.calendarList ?? [];
+  const selectedDateKey = date ? formatDateToYYYYMMDD(date) : null;
+  const todayDateKey = formatDateToYYYYMMDD(today);
+  const agendamentos = getAppointmentsForDate(
+    scheduledTreatments,
+    selectedDateKey,
+  );
 
   const isToday =
     date?.getDate() === today.getDate() &&
@@ -70,8 +175,20 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
         })
       : "Selecione um dia";
 
-  const todayAgendamentos = mockAgenda[today.getDate()] ?? [];
-  const daysWithEvents = Object.keys(mockAgenda).map(Number);
+  const todayAgendamentos = getAppointmentsForDate(
+    scheduledTreatments,
+    todayDateKey,
+  );
+  const weekAgendamentosCount = getAppointmentsCountForWeek(
+    scheduledTreatments,
+    today,
+  );
+  const daysWithEvents = new Set(
+    scheduledTreatments
+      .filter((schedule) => (schedule.hours?.length ?? 0) > 0)
+      .map((schedule) => schedule.date)
+      .filter(Boolean),
+  );
 
   // verifica se o dia selecionado é folga
   const excecaoDoDia = excecoes.find((e) => date && isSameDay(e.date, date));
@@ -86,18 +203,54 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
     );
   }
 
-  // Função para lidar com o cancelamento
-  const handleCancelAgendamento = (agendamento: Agendamento) => {
-    const confirmar = window.confirm(`Tem certeza que deseja cancelar o agendamento de ${agendamento.name}?`);
-    if (confirmar) {
-      // TODO: Integrar com sua API/Backend ou atualizar o estado local do mockAgenda
-      console.log("Cancelando agendamento:", agendamento);
-      
-      // Fecha o modal após cancelar
-      setSelectedAgendamento(null);
-    }
-  };
+  function formatDateToYYYYMMDD(date: Date) {
+    return date.toLocaleDateString("en-CA");
+  }
 
+  function formatHour(hour: string) {
+    return hour.slice(0, 5);
+  }
+
+  function getAppointmentsForDate(
+    schedules: CalendarResponse[],
+    dateKey: string | null,
+  ) {
+    if (!dateKey) return [];
+
+    return schedules
+      .filter((schedule) => schedule.date === dateKey)
+      .flatMap((schedule) =>
+        (schedule.hours ?? []).map((hour) => ({
+          time: formatHour(hour),
+          date: schedule.date!,
+          treatmentId: schedule.treatmentId,
+        })),
+      )
+      .sort((a, b) => a.time.localeCompare(b.time));
+  }
+
+  function getAppointmentsCountForWeek(
+    schedules: CalendarResponse[],
+    referenceDate: Date,
+  ) {
+    const weekStart = new Date(referenceDate);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(referenceDate.getDate() - referenceDate.getDay());
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return schedules.reduce((total, schedule) => {
+      if (!schedule.date) return total;
+
+      const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+      const isCurrentWeek =
+        scheduleDate >= weekStart && scheduleDate <= weekEnd;
+
+      return isCurrentWeek ? total + (schedule.hours?.length ?? 0) : total;
+    }, 0);
+  }
   return (
     <div className="p-6 flex flex-col gap-6">
       <div>
@@ -120,7 +273,11 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
           value={String(todayAgendamentos.length)}
           sub="agendamentos"
         />
-        <MetricCard label="Esta semana" value="18" sub="agendamentos" />
+        <MetricCard
+          label="Esta semana"
+          value={String(weekAgendamentosCount)}
+          sub="agendamentos"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -137,17 +294,19 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
               onSelect={setDate}
               locale={ptBR}
               captionLayout="dropdown"
+              loading={isLoading}
               className="[--cell-size:2.5rem] sm:[--cell-size:3rem] md:[--cell-size:3.5rem]"
               modifiers={{
-                hasEvents: (d) => daysWithEvents.includes(d.getDate()),
+                hasEvents: (d) => daysWithEvents.has(formatDateToYYYYMMDD(d)),
               }}
               modifiersClassNames={{
                 hasEvents:
                   "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-ring",
               }}
+              onMonthChange={setVisibleMonth}
             />
           </div>
-          
+
           <div className="px-4 py-3 border-t border-border bg-white/40">
             <p className="text-sm text-muted-foreground">
               *Dias marcados possuem pelo menos 1 agendamento.
@@ -162,15 +321,19 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
               {dayLabel}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {agendamentos.length === 0 ? "Nenhum agendamento" : ""}
+              {isLoading
+                ? "Carregando agendamentos"
+                : agendamentos.length === 0
+                  ? "Nenhum agendamento"
+                  : ""}
             </p>
           </div>
 
           <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
-            {agendamentos.length === 0 &&
+            {!isLoading &&
+              agendamentos.length === 0 &&
               (isFolga ? (
                 <div className="flex flex-col items-center gap-2 py-8">
-                  <span className="text-2xl">🌿</span>
                   <p className="text-sm font-medium text-foreground">
                     Dia de folga
                   </p>
@@ -184,91 +347,47 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
                 </p>
               ))}
 
-            {agendamentos.map((a: Agendamento, i: number) => (
-              <div
-                key={i}
-                onClick={() => setSelectedAgendamento(a)} // Abre o modal ao clicar no card
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors bg-white cursor-pointer"
-              >
-                <span className="text-xs text-muted-foreground pt-0.5 min-w-9.5">
-                  {a.time}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {a.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {a.service}
-                  </p>
-                </div>
+            {isLoading && (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-16 rounded-lg border border-border bg-muted/40 animate-pulse"
+                  />
+                ))}
               </div>
+            )}
+
+            {agendamentos.map((a, i) => (
+              <ScheduleOption
+                info={a}
+                key={`${a.date}-${a.time}-${a.treatmentId ?? i}`}
+                onSelect={setSelectedAppointment}
+              />
             ))}
           </div>
           <div className="px-4 py-3 border-t border-border bg-white/60">
             <p className="text-sm text-muted-foreground">
-              Selecione um cliente para mais infos
+              Selecione um agendamento para ver mais informações.
             </p>
           </div>
         </div>
       </div>
 
       {/* Modal de Detalhes do Agendamento */}
-      <Dialog open={!!selectedAgendamento} onOpenChange={(open) => !open && setSelectedAgendamento(null)}>
-        <DialogContent className="sm:max-w-106.25">
+      <Dialog
+        open={!!selectedAppointment}
+        onOpenChange={(open) => !open && setSelectedAppointment(null)}
+      >
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Detalhes do Agendamento</DialogTitle>
             <DialogDescription>
-              Informações do cliente e gerenciamento do horário.
+              Informações do tratamento agendado.
             </DialogDescription>
           </DialogHeader>
 
-          {selectedAgendamento && (
-            <div className="grid gap-4 py-4 text-sm">
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">Cliente:</span>
-                <span className="col-span-3 text-foreground font-medium">{selectedAgendamento.name}</span>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">Telefone:</span>
-                <span className="col-span-3 text-foreground">{selectedAgendamento.phone || "(47) 99999-9999"}</span>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">E-mail:</span>
-                <span className="col-span-3 text-foreground break-all">{selectedAgendamento.email || "cliente@email.com"}</span>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">Serviço:</span>
-                <span className="col-span-3 text-foreground">{selectedAgendamento.service}</span>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">Data:</span>
-                <span className="col-span-3 text-foreground">Dia aqui</span>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <span className="font-semibold text-muted-foreground text-right">Horário:</span>
-                <span className="col-span-3 text-foreground">{selectedAgendamento.time}</span>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setSelectedAgendamento(null)}
-              className="w-full sm:w-auto"
-            >
-              Fechar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => selectedAgendamento && handleCancelAgendamento(selectedAgendamento)}
-              className="w-full sm:w-auto"
-            >
-              Cancelar Agendamento
-            </Button>
-          </DialogFooter>
+          {selectedAppointment && <AppointmentDetails info={selectedAppointment} />}
         </DialogContent>
       </Dialog>
     </div>

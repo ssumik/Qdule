@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -9,11 +9,12 @@ import {
   Clock,
   DollarSign,
   Search,
+  LoaderCircle,
 } from "lucide-react";
 import { AgendaInline } from "@/pages/AgendaInline";
 import { TreatmentStatus, TreatmentType } from "@joao.sumi/qdule";
-import { useQuery } from "@tanstack/react-query";
-import TreatmentFilter from "@/requests/TreatmentRequest";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { TreatmentFilter } from "@/requests/TreatmentRequest";
 
 export interface Treatment {
   id: number;
@@ -23,7 +24,16 @@ export interface Treatment {
   price: number;
   imagePath: string;
   type: TreatmentType;
+  status: TreatmentStatus;
 }
+
+type TreatmentPage = {
+  content?: Treatment[];
+  page?: number;
+  size?: number;
+  totalElements?: number;
+  totalPages?: number;
+};
 
 const getTreatmentByType = (type: TreatmentType) => {
   switch (type) {
@@ -43,23 +53,17 @@ const SearchComponent = ({
   text: string;
   onCardClick: (s: Treatment) => void;
 }) => {
-  text = text.trim().toLowerCase();
+  const searchText = text.trim().toLowerCase();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<TreatmentPage>({
     // TODO: pensar se text como key nao pode trazer alguns problemas de performance
-    queryKey: ["treatments_search", text],
-    queryFn: () =>
-      TreatmentFilter({
-        page: 1,
-        size: 10,
-        type: undefined,
-        text: text,
-      }),
+    queryKey: ["treatments_search", searchText],
+    queryFn: () => TreatmentFilter(1, 10, searchText, undefined),
   });
 
-  console.log({ data }, { isLoading });
-
-  //TODO: ADICIONAR LOADING
+  if (isLoading) {
+    return <SearchLoading />;
+  }
 
   return (
     <div>
@@ -78,7 +82,7 @@ const SearchComponent = ({
           <p className="text-sm text-muted-foreground mb-6">
             {data?.content?.length} resultado
             {data?.content?.length !== 1 ? "s" : ""} para{" "}
-            <span className="font-medium text-foreground">"{text}"</span>
+            <span className="font-medium text-foreground">"{searchText}"</span>
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {data?.content?.map((item) => {
@@ -132,17 +136,76 @@ function CarrosselType({
   type: TreatmentType;
   onCardClick: (s: Treatment) => void;
 }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["treatments", type],
-    queryFn: () =>
-      TreatmentFilter({
-        page: 1,
-        size: 10,
-        type: type,
-      }),
-  });
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } =
+    useInfiniteQuery<TreatmentPage>({
+      queryKey: ["treatments", type],
+      queryFn: ({ pageParam }) =>
+        TreatmentFilter(Number(pageParam), 10, undefined, type),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) => {
+        const currentPage = lastPage.page ?? 1;
+        const totalPages = lastPage.totalPages ?? 1;
+
+        return currentPage < totalPages ? currentPage + 1 : undefined;
+      },
+    });
 
   const trackRef = useRef<HTMLDivElement>(null);
+  const cleanupTrackListenerRef = useRef<(() => void) | null>(null);
+  const paginationStateRef = useRef({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  });
+  const firstPage = data?.pages[0];
+  const items = data?.pages.flatMap((page) => page.content ?? []) ?? [];
+
+  useEffect(() => {
+    paginationStateRef.current = {
+      fetchNextPage,
+      hasNextPage,
+      isFetchingNextPage,
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  useEffect(() => {
+    return () => {
+      cleanupTrackListenerRef.current?.();
+    };
+  }, []);
+
+  const setTrackRef = useCallback((track: HTMLDivElement | null) => {
+    cleanupTrackListenerRef.current?.();
+    cleanupTrackListenerRef.current = null;
+    trackRef.current = track;
+
+    if (!track) return;
+    const scrollTrack = track;
+
+    function isAtEnd() {
+      return (
+        scrollTrack.scrollLeft + scrollTrack.clientWidth >=
+        scrollTrack.scrollWidth - 80
+      );
+    }
+
+    function handleScrollEnd() {
+      const { fetchNextPage, hasNextPage, isFetchingNextPage } =
+        paginationStateRef.current;
+
+      if (!isAtEnd() || !hasNextPage || isFetchingNextPage) {
+        return;
+      }
+
+      fetchNextPage();
+    }
+
+    scrollTrack.addEventListener("scrollend", handleScrollEnd);
+
+    cleanupTrackListenerRef.current = () => {
+      scrollTrack.removeEventListener("scrollend", handleScrollEnd);
+    };
+  }, []);
 
   function scroll(dir: "left" | "right") {
     if (!trackRef.current) return;
@@ -154,10 +217,11 @@ function CarrosselType({
     });
   }
 
-  // TODO: VERIFICAR COMO FAZER ESTE PONTO
-  if (isLoading) return <>CARREGANDO</>;
+  if (isLoading) {
+    return <CarouselLoading title={getTreatmentByType(type)} />;
+  }
 
-  if (data?.totalElements == 0) return null;
+  if (firstPage?.totalElements == 0) return null;
 
   return (
     <section className="flex flex-col gap-3">
@@ -168,23 +232,23 @@ function CarrosselType({
             {getTreatmentByType(type)}
           </h2>
           <span className="text-sm text-muted-foreground font-normal ml-1">
-            ({data?.totalElements})
+            ({firstPage?.totalElements})
           </span>
         </div>
 
         {/* Setas posicionadas no canto direito, alinhadas com o título */}
-        <div className="ml-auto flex gap-3 md:px-80 sm:px-0">
+        <div className="ml-auto flex items-center gap-3 md:px-80 sm:px-0">
           <button
             onClick={() => scroll("left")}
             className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 shadow-md flex items-center justify-center transition-colors text-white"
-            aria-label="Anterior"
+            aria-label="Rolar para serviço anterior"
           >
             <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
           </button>
           <button
             onClick={() => scroll("right")}
             className="w-9 h-9 rounded-full bg-accent hover:bg-accent/80 shadow-md flex items-center justify-center transition-colors text-white"
-            aria-label="Próximo"
+            aria-label="Rolar para próximo serviço"
           >
             <ChevronRight className="w-5 h-5 stroke-[2.5]" />
           </button>
@@ -198,11 +262,11 @@ function CarrosselType({
           <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-rose-100 to-transparent" />
 
           <div
-            ref={trackRef}
+            ref={setTrackRef}
             className="flex gap-4 overflow-x-auto pb-3 px-1 snap-x snap-mandatory scroll-smooth"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {data?.content?.map((item) => {
+            {items.map((item) => {
               const ativo = item?.status == TreatmentStatus.Active;
               return (
                 <Card
@@ -240,10 +304,65 @@ function CarrosselType({
                 </Card>
               );
             })}
+
+            {isFetchingNextPage && <CarouselAppendLoading />}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function SearchLoading() {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <LoaderCircle className="size-4 animate-spin text-accent" />
+        Buscando serviços...
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {Array.from({ length: 10 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-52 rounded-2xl border border-white/50 bg-white/50 shadow-lg animate-pulse"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CarouselLoading({ title }: { title: string }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+        <LoaderCircle className="size-5 animate-spin text-accent" />
+      </div>
+
+      <div className="flex gap-4 overflow-hidden pb-3 px-1">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="h-80 shrink-0 rounded-2xl border border-white/50 bg-white/50 shadow-lg animate-pulse w-[85%] sm:w-[48%] lg:w-[23%]"
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CarouselAppendLoading() {
+  return (
+    <>
+      {Array.from({ length: 2 }).map((_, index) => (
+        <div
+          key={index}
+          className="h-80 shrink-0 rounded-2xl border border-white/50 bg-white/50 shadow-lg animate-pulse w-[85%] sm:w-[48%] lg:w-[23%]"
+        />
+      ))}
+    </>
   );
 }
 
@@ -276,7 +395,7 @@ function ModalServico({
         <div className="p-5 flex flex-col gap-4">
           {/* Badge categoria */}
           <span className="text-xs font-medium text-accent uppercase tracking-wide">
-             {getTreatmentByType(servico.type)}
+            {getTreatmentByType(servico.type)}
           </span>
 
           <h2 className="text-xl font-semibold leading-snug">{servico.name}</h2>

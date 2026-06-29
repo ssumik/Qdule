@@ -13,6 +13,7 @@ interface CadastroAgendamentoProps {
   dia: string | null;
   mes: string | null;
   horario: string | null;
+  isSubmitting?: boolean;
 
   onSubmit: (dados: { nome: string; email: string; celular: string }) => void;
 }
@@ -28,6 +29,7 @@ export function CadastroAgendamento({
   dia,
   mes,
   horario,
+  isSubmitting = false,
   onSubmit,
 }: CadastroAgendamentoProps) {
   const [aceitouTermos, setAceitouTermos] = useState(false);
@@ -81,7 +83,7 @@ export function CadastroAgendamento({
 
           <p className="text-sm text-accent">
             R$ {Number(servico?.price).toFixed(2).replace(".", ",")} •{" "}
-            {servico?.duration} min
+            {servico?.duration / 60} min
           </p>
         </div>
 
@@ -180,10 +182,10 @@ export function CadastroAgendamento({
 
         <Button
           type="submit"
-          disabled={!aceitouTermos}
+          disabled={!aceitouTermos || isSubmitting}
           className="w-full bg-accent hover:bg-buttonhover text-white rounded-xl h-12 mt-2 cursor-pointer"
         >
-          Continuar
+          {isSubmitting ? "Agendando..." : "Continuar"}
         </Button>
       </form>
     </>

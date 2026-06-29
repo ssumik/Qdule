@@ -3,7 +3,7 @@ import axios from "axios";
 const TOKEN_KEY = "qdule_token";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8082",
+  baseURL: import.meta.env.VITE_QDULE_BACKEND,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -26,5 +26,5 @@ api.interceptors.response.use(
       window.location.href = "/admin/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
