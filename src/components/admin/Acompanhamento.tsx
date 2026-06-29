@@ -29,10 +29,16 @@ interface AcompanhamentoProps {
   excecoes: ExcecaoDia[];
 }
 
-function ScheduleOption({ info }: { info: any; id: any }) {
+type AppointmentInfo = {
+  time: string;
+  treatmentId?: number;
+};
+
+function ScheduleOption({ info }: { info: AppointmentInfo }) {
   const { data } = useQuery({
     queryKey: ["treatment", info.treatmentId],
-    queryFn: () => GetTreatmentById(info.treatmentId),
+    queryFn: () => GetTreatmentById(info.treatmentId!),
+    enabled: info.treatmentId !== undefined,
   });
 
   return (
@@ -44,7 +50,9 @@ function ScheduleOption({ info }: { info: any; id: any }) {
         <p className="text-sm font-medium text-foreground truncate">
           Agendamento
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{data?.name}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {data?.name ?? `Tratamento #${info.treatmentId ?? "-"}`}
+        </p>
       </div>
     </div>
   );
@@ -95,6 +103,10 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
     scheduledTreatments,
     todayDateKey,
   );
+  const weekAgendamentosCount = getAppointmentsCountForWeek(
+    scheduledTreatments,
+    today,
+  );
   const daysWithEvents = new Set(
     scheduledTreatments
       .filter((schedule) => (schedule.hours?.length ?? 0) > 0)
@@ -140,6 +152,29 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
       .sort((a, b) => a.time.localeCompare(b.time));
   }
 
+  function getAppointmentsCountForWeek(
+    schedules: CalendarResponse[],
+    referenceDate: Date,
+  ) {
+    const weekStart = new Date(referenceDate);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(referenceDate.getDate() - referenceDate.getDay());
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    return schedules.reduce((total, schedule) => {
+      if (!schedule.date) return total;
+
+      const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+      const isCurrentWeek =
+        scheduleDate >= weekStart && scheduleDate <= weekEnd;
+
+      return isCurrentWeek ? total + (schedule.hours?.length ?? 0) : total;
+    }, 0);
+  }
+
   return (
     <div className="p-6 flex flex-col gap-6">
       <div>
@@ -162,7 +197,11 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
           value={String(todayAgendamentos.length)}
           sub="agendamentos"
         />
-        <MetricCard label="Esta semana" value="18" sub="agendamentos" />
+        <MetricCard
+          label="Esta semana"
+          value={String(weekAgendamentosCount)}
+          sub="agendamentos"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -244,7 +283,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             )}
 
             {agendamentos.map((a, i) => (
-              <ScheduleOption id={i} info={a} key={i} />
+              <ScheduleOption info={a} key={i} />
             ))}
           </div>
         </div>
