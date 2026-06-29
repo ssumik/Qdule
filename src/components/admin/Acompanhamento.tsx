@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
@@ -6,6 +6,14 @@ import { ScheduledTreatments } from "@/requests/CalendarRequest";
 import { type CalendarResponse } from "@joao.sumi/qdule";
 import { useQuery } from "@tanstack/react-query";
 import { TreatmentById as GetTreatmentById } from "@/requests/TreatmentRequest";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function MetricCard({
   label,
@@ -31,37 +39,105 @@ interface AcompanhamentoProps {
 
 type AppointmentInfo = {
   time: string;
+  date: string;
   treatmentId?: number;
 };
 
-function ScheduleOption({ info }: { info: AppointmentInfo }) {
-  const { data } = useQuery({
+function ScheduleOption({
+  info,
+  onSelect,
+}: {
+  info: AppointmentInfo;
+  onSelect: (info: AppointmentInfo) => void;
+}) {
+  const { data, isLoading } = useQuery({
     queryKey: ["treatment", info.treatmentId],
     queryFn: () => GetTreatmentById(info.treatmentId!),
     enabled: info.treatmentId !== undefined,
   });
 
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors bg-white">
-      <span className="text-xs text-muted-foreground pt-0.5 min-w-38px">
+    <button
+      type="button"
+      onClick={() => onSelect(info)}
+      className="flex w-full items-start gap-3 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/40"
+    >
+      <span className="min-w-10 pt-0.5 text-xs text-muted-foreground">
         {info.time}
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">
-          Agendamento
+          {isLoading ? "Carregando..." : (data?.name ?? "Agendamento")}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {data?.name ?? `Tratamento #${info.treatmentId ?? "-"}`}
+          {info.treatmentId
+            ? `Tratamento #${info.treatmentId}`
+            : "Tratamento não informado"}
         </p>
       </div>
+    </button>
+  );
+}
+
+function AppointmentDetails({ info }: { info: AppointmentInfo }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["treatment", info.treatmentId],
+    queryFn: () => GetTreatmentById(info.treatmentId!),
+    enabled: info.treatmentId !== undefined,
+  });
+
+  return (
+    <div className="grid gap-4 py-4 text-sm">
+      <DetailRow label="Tratamento">
+        {isLoading ? "Carregando..." : (data?.name ?? "Não informado")}
+      </DetailRow>
+      {data?.duration && <DetailRow label="Duração">{data.duration}</DetailRow>}
+      {data?.price !== undefined && (
+        <DetailRow label="Valor">
+          {data.price.toLocaleString("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          })}
+        </DetailRow>
+      )}
+      <DetailRow label="Data">{formatDateLabel(info.date)}</DetailRow>
+      <DetailRow label="Horário">{info.time}</DetailRow>
     </div>
   );
+}
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-4 items-start gap-4">
+      <span className="text-right font-semibold text-muted-foreground">
+        {label}:
+      </span>
+      <span className="col-span-3 text-foreground">{children}</span>
+    </div>
+  );
+}
+
+function formatDateLabel(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
   const today = new Date();
   const [date, setDate] = useState<Date | undefined>(today);
   const [visibleMonth, setVisibleMonth] = useState(today);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<AppointmentInfo | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: [
@@ -146,6 +222,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
       .flatMap((schedule) =>
         (schedule.hours ?? []).map((hour) => ({
           time: formatHour(hour),
+          date: schedule.date!,
           treatmentId: schedule.treatmentId,
         })),
       )
@@ -174,7 +251,6 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
       return isCurrentWeek ? total + (schedule.hours?.length ?? 0) : total;
     }, 0);
   }
-
   return (
     <div className="p-6 flex flex-col gap-6">
       <div>
@@ -231,7 +307,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             />
           </div>
 
-          <div className="px-4 py-3 border-t border-border bg-muted/40">
+          <div className="px-4 py-3 border-t border-border bg-white/40">
             <p className="text-sm text-muted-foreground">
               *Dias marcados possuem pelo menos 1 agendamento.
             </p>
@@ -283,11 +359,37 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             )}
 
             {agendamentos.map((a, i) => (
-              <ScheduleOption info={a} key={i} />
+              <ScheduleOption
+                info={a}
+                key={`${a.date}-${a.time}-${a.treatmentId ?? i}`}
+                onSelect={setSelectedAppointment}
+              />
             ))}
+          </div>
+          <div className="px-4 py-3 border-t border-border bg-white/60">
+            <p className="text-sm text-muted-foreground">
+              Selecione um agendamento para ver mais informações.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Modal de Detalhes do Agendamento */}
+      <Dialog
+        open={!!selectedAppointment}
+        onOpenChange={(open) => !open && setSelectedAppointment(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            <DialogDescription>
+              Informações do tratamento agendado.
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAppointment && <AppointmentDetails info={selectedAppointment} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
