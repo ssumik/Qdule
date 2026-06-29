@@ -6,21 +6,10 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
 import type { Treatment } from "@/components/servicos/cards_servicos";
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
-import { AvaliableSchedules, CreateSchedule } from "@/requests/ScheduleRequest";
-import { ScheduleStatus } from "@joao.sumi/qdule";
+import { CreateSchedule } from "@/requests/ScheduleRequest";
+import { ScheduleStatus, type CalendarResponse } from "@joao.sumi/qdule";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-type AvailableSchedule = {
-  treatmentId: number;
-  date: string;
-  hours: string[];
-};
-
-type AvailableSchedulesResponse =
-  | AvailableSchedule[]
-  | {
-      content?: AvailableSchedule[];
-    };
+import { AvaliableSchedules } from "@/requests/CalendarRequest";
 
 interface AgendaInlineProps {
   servico: Treatment;
@@ -42,30 +31,24 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
   const [modalAberto, setModalAberto] = useState(false);
 
-  // ─── Datas derivadas ──────────────────────────────────────────────
-
-  const firstDayOfMonth = formatDateToYYYYMMDD(
-    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1),
-  );
-
-  const lastDayOfMonth = formatDateToYYYYMMDD(
-    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0),
-  );
-
   const availabilityQueryKey = [
     "avaliable_on_month",
     servico.id,
-    `${visibleMonth.getMonth()}-${visibleMonth.getFullYear()}`,
+    `${visibleMonth.getMonth() + 1}-${visibleMonth.getFullYear()}`,
   ];
 
-  const { data, isLoading } = useQuery<AvailableSchedulesResponse>({
+  const { data, isLoading } = useQuery({
     queryKey: availabilityQueryKey,
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
     queryFn: () =>
-      AvaliableSchedules(servico.id, firstDayOfMonth, lastDayOfMonth),
+      AvaliableSchedules(
+        servico.id,
+        visibleMonth.getFullYear(),
+        visibleMonth.getMonth() + 1,
+      ),
   });
 
   const createScheduleMutation = useMutation({
@@ -100,9 +83,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
     },
   });
 
-  const availableSchedules: AvailableSchedule[] = Array.isArray(data)
-    ? data
-    : (data?.content ?? []);
+  const availableSchedules = data?.calendarList ?? [];
 
   const diaSelecionado = date ? String(date.getDate()).padStart(2, "0") : null;
 
@@ -113,8 +94,9 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
   const selectedDateKey = date ? formatDateToYYYYMMDD(date) : null;
 
   const horarios =
-    availableSchedules.find((schedule) => schedule.date === selectedDateKey)
-      ?.hours ?? [];
+    availableSchedules.find(
+      (schedule: CalendarResponse) => schedule.date === selectedDateKey,
+    )?.hours ?? [];
 
   // ─── Dias sem horário disponível ──────────────────────────────────
 
@@ -125,8 +107,9 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
     const dateKey = formatDateToYYYYMMDD(date);
     const horariosDoDia =
-      availableSchedules.find((schedule) => schedule.date === dateKey)?.hours ??
-      [];
+      availableSchedules.find(
+        (schedule: CalendarResponse) => schedule.date === dateKey,
+      )?.hours ?? [];
 
     return horariosDoDia.length === 0;
   }
