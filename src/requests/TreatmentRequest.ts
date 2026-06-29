@@ -1,19 +1,19 @@
 import { baseUrl } from "@/EnvVariables";
-import {
-  TreatmentResourceApi,
-  type TreatmentResourceApiTreatmentsGetRequest,
-} from "@joao.sumi/qdule";
+import { TreatmentResourceApi, TreatmentType } from "@joao.sumi/qdule";
 
 export default async function TreatmentFilter(
-  request: TreatmentResourceApiTreatmentsGetRequest,
+  page: number,
+  size: number,
+  text?: string,
+  type?: TreatmentType,
 ) {
   const treatmentApi = new TreatmentResourceApi(undefined, baseUrl);
 
   const { data } = await treatmentApi.treatmentsGet({
-    page: request.page,
-    size: request.size,
-    type: request.type,
-    text: request.text,
+    page,
+    size,
+    type,
+    text,
   });
   return data;
 }

@@ -48,13 +48,7 @@ const SearchComponent = ({
   const { data, isLoading } = useQuery({
     // TODO: pensar se text como key nao pode trazer alguns problemas de performance
     queryKey: ["treatments_search", text],
-    queryFn: () =>
-      TreatmentFilter({
-        page: 1,
-        size: 10,
-        type: undefined,
-        text: text,
-      }),
+    queryFn: () => TreatmentFilter(1, 10, text, undefined),
   });
 
   console.log({ data }, { isLoading });
@@ -134,12 +128,7 @@ function CarrosselType({
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["treatments", type],
-    queryFn: () =>
-      TreatmentFilter({
-        page: 1,
-        size: 10,
-        type: type,
-      }),
+    queryFn: () => TreatmentFilter(1, 10, undefined, type),
   });
 
   const trackRef = useRef<HTMLDivElement>(null);
@@ -276,7 +265,7 @@ function ModalServico({
         <div className="p-5 flex flex-col gap-4">
           {/* Badge categoria */}
           <span className="text-xs font-medium text-accent uppercase tracking-wide">
-             {getTreatmentByType(servico.type)}
+            {getTreatmentByType(servico.type)}
           </span>
 
           <h2 className="text-xl font-semibold leading-snug">{servico.name}</h2>
