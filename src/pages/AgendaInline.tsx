@@ -6,14 +6,21 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
 import type { Treatment } from "@/components/servicos/cards_servicos";
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
+import { AvaliableSchedules, CreateSchedule } from "@/requests/ScheduleRequest";
+import { ScheduleStatus } from "@joao.sumi/qdule";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-// ─── mock de horários ─────────────────────────────────────────────────
-const mockHorarios: Record<number, string[]> = {
-  21: ["08:30", "09:30", "10:00", "10:15", "10:30"],
-  22: ["10:00"],
-  23: ["14:00"],
-  27: ["10:00"],
+type AvailableSchedule = {
+  treatmentId: number;
+  date: string;
+  hours: string[];
 };
+
+type AvailableSchedulesResponse =
+  | AvailableSchedule[]
+  | {
+      content?: AvailableSchedule[];
+    };
 
 interface AgendaInlineProps {
   servico: Treatment;
@@ -21,7 +28,13 @@ interface AgendaInlineProps {
 }
 
 export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
+  const queryClient = useQueryClient();
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [visibleMonth, setVisibleMonth] = useState(new Date());
+  const [today] = useState(new Date());
+  const [maxDate] = useState(
+    () => new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
+  );
 
   const [horarioSelecionado, setHorarioSelecionado] = useState<string | null>(
     null,
@@ -31,21 +44,90 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
   // ─── Datas derivadas ──────────────────────────────────────────────
 
+  const firstDayOfMonth = formatDateToYYYYMMDD(
+    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1),
+  );
+
+  const lastDayOfMonth = formatDateToYYYYMMDD(
+    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0),
+  );
+
+  const availabilityQueryKey = [
+    "avaliable_on_month",
+    servico.id,
+    `${visibleMonth.getMonth()}-${visibleMonth.getFullYear()}`,
+  ];
+
+  const { data, isLoading } = useQuery<AvailableSchedulesResponse>({
+    queryKey: availabilityQueryKey,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    queryFn: () =>
+      AvaliableSchedules(servico.id, firstDayOfMonth, lastDayOfMonth),
+  });
+
+  const createScheduleMutation = useMutation({
+    mutationFn: (dados: { nome: string; email: string; celular: string }) => {
+      if (!selectedDateKey || !horarioSelecionado) {
+        throw new Error("Selecione uma data e um horário antes de continuar.");
+      }
+
+      const startDateTime = formatDateTimeForApi(
+        selectedDateKey,
+        horarioSelecionado,
+      );
+      const endDateTime = addSecondsToDateTime(startDateTime, servico.duration);
+
+      return CreateSchedule(
+        servico.id,
+        dados.nome,
+        dados.email,
+        dados.celular,
+        startDateTime,
+        endDateTime,
+        ScheduleStatus.Pending,
+      );
+    },
+    onSuccess: (_schedule, dados) => {
+      queryClient.invalidateQueries({ queryKey: availabilityQueryKey });
+      alert(`Agendamento realizado com sucesso para ${dados.nome}!`);
+      setModalAberto(false);
+    },
+    onError: () => {
+      alert("Não foi possível realizar o agendamento. Tente novamente.");
+    },
+  });
+
+  const availableSchedules: AvailableSchedule[] = Array.isArray(data)
+    ? data
+    : (data?.content ?? []);
+
   const diaSelecionado = date ? String(date.getDate()).padStart(2, "0") : null;
 
   const mesSelecionado = date
     ? String(date.getMonth() + 1).padStart(2, "0")
     : null;
 
-  const diaNum = date?.getDate();
+  const selectedDateKey = date ? formatDateToYYYYMMDD(date) : null;
 
-  const horarios = diaNum ? (mockHorarios[diaNum] ?? []) : [];
+  const horarios =
+    availableSchedules.find((schedule) => schedule.date === selectedDateKey)
+      ?.hours ?? [];
 
   // ─── Dias sem horário disponível ──────────────────────────────────
 
-  function isDiaIndisponivel(day: Date): boolean {
-    const diaNum = day.getDate();
-    const horariosDoDia = mockHorarios[diaNum] ?? [];
+  function isDiaIndisponivel(date: Date): boolean {
+    if (isLoading) {
+      return true;
+    }
+
+    const dateKey = formatDateToYYYYMMDD(date);
+    const horariosDoDia =
+      availableSchedules.find((schedule) => schedule.date === dateKey)?.hours ??
+      [];
+
     return horariosDoDia.length === 0;
   }
 
@@ -61,15 +143,48 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
     email: string;
     celular: string;
   }) {
-    alert(`Agendamento realizado com sucesso para ${dados.nome}!`);
-
-    setModalAberto(false);
+    createScheduleMutation.mutate(dados);
   }
 
   // ─── Fechamento do modal ──────────────────────────────────────────
 
   function handleModalChange(open: boolean) {
     setModalAberto(open);
+  }
+
+  const onMonthChange = (date: Date) => {
+    setVisibleMonth(date);
+  };
+
+  function formatDateToYYYYMMDD(date: Date) {
+    return date.toLocaleDateString("en-CA");
+  }
+
+  function formatHour(hour: string) {
+    return hour.slice(0, 5);
+  }
+
+  function formatDateTimeForApi(date: string, hour: string) {
+    const [hours = "00", minutes = "00", seconds = "00"] = hour.split(":");
+    return `${date}T${hours}:${minutes}:${seconds}`;
+  }
+
+  function addSecondsToDateTime(dateTime: string, secondsToAdd: number) {
+    const nextDate = new Date(dateTime);
+    nextDate.setSeconds(nextDate.getSeconds() + secondsToAdd);
+
+    return formatLocalDateTime(nextDate);
+  }
+
+  function formatLocalDateTime(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
   }
 
   return (
@@ -121,11 +236,13 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
               onSelect={handleSelectDate}
               captionLayout="dropdown"
               locale={ptBR}
+              loading={isLoading}
               disabled={[
-                { before: new Date() },
-                { after: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) },
+                { before: today },
+                { after: maxDate },
                 isDiaIndisponivel,
               ]}
+              onMonthChange={onMonthChange}
             />
           </div>
 
@@ -176,7 +293,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                         : "bg-white text-accent"
                     }`}
                   >
-                    {hora}
+                    {formatHour(hora)}
                   </Button>
                 );
               })}
@@ -213,7 +330,10 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                   servico={servico}
                   dia={diaSelecionado}
                   mes={mesSelecionado}
-                  horario={horarioSelecionado}
+                  horario={
+                    horarioSelecionado ? formatHour(horarioSelecionado) : null
+                  }
+                  isSubmitting={createScheduleMutation.isPending}
                   onSubmit={handleCadastroConcluido}
                 />
               </DialogContent>
