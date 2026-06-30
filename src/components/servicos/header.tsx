@@ -38,8 +38,7 @@ export default function Header() {
           <div className="flex items-center justify-center gap-2">
             <div className="p-2">
               <Button
-                variant="outline"
-                className="rounded-lg hover:bg-rose-200 h-11 w-11 p-0 cursor-pointer"
+                className="rounded-lg hover:bg-button h-11 w-11 p-0 cursor-pointer"
                 asChild
               >
                 <Link
@@ -54,8 +53,7 @@ export default function Header() {
 
             <div className="p-2">
               <Button
-                variant="outline"
-                className="rounded-lg hover:bg-primary h-11 w-11 p-0 cursor-pointer"
+                className="rounded-lg hover:bg-button h-11 w-11 p-0 cursor-pointer"
                 asChild
               >
                 <Link
@@ -70,8 +68,7 @@ export default function Header() {
 
             <div className="p-2">
               <Button
-                variant="outline"
-                className="rounded-lg hover:bg-primary h-11 w-11 p-0 cursor-pointer"
+                className="rounded-lg hover:bg-button h-11 w-11 p-0 cursor-pointer"
                 asChild
               >
                 <Link
@@ -83,9 +80,6 @@ export default function Header() {
                 </Link>
               </Button>
             </div>
-          </div>
-          <div className="w-full max-w-4xl p-4 text-white! flex flex-col items-center justify-center mt-4">
-            <p> Horário de funcionamento: seg a sex das xx:xx ás xx:xx</p>
           </div>
         </div>
       </div>

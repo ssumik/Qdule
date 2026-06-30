@@ -7,7 +7,7 @@ export default function Footer() {
             Estética Hanna Kupas
           </h3>
           <p className="text-sm leading-relaxed">
-            Serviços de estética facial e corporal, massoterapia...
+            Serviços de estética facial, corporal e massoterapia... Tudo para seu bem estar!
           </p>
         </div>
 
@@ -18,8 +18,6 @@ export default function Footer() {
           <ul className="space-y-2 text-sm">
             <li>📍 R. Bartolomeu Spezia, 470 | Guaramirim - SC</li>
             <li>📞 (47) 99707-4991</li>
-            <li>✉️ contato@suaclinica.com</li>
-            <li>🕒 Seg a Sáb: 09h às 19h</li>
           </ul>
         </div>
 

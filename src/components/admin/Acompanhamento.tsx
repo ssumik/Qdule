@@ -13,6 +13,7 @@ import {
 } from "@joao.sumi/qdule";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TreatmentById as GetTreatmentById } from "@/requests/TreatmentRequest";
+import { ClientById as GetClientById } from "@/requests/ClientRequest";
 
 import {
   Dialog,
@@ -50,27 +51,30 @@ interface AppointmentInfo extends ScheduleUpdateRequest {
   time: string;
   date: string;
   treatmentId?: number;
+  clientId?: number;
 }
 
 function ScheduleOption({
   info,
   onSelect,
-  onCancel,
-  isCanceling,
 }: {
   info: AppointmentInfo;
   onSelect: (info: AppointmentInfo) => void;
-  onCancel: (info: AppointmentInfo) => void;
-  isCanceling: boolean;
 }) {
-  const { data, isLoading } = useQuery({
+  const { data: treatment, isLoading: isTreatmentLoading } = useQuery({
     queryKey: ["treatment", info.treatmentId],
     queryFn: () => GetTreatmentById(info.treatmentId!),
     enabled: info.treatmentId !== undefined,
   });
 
+  const { data: client, isLoading: isClientLoading } = useQuery({
+    queryKey: ["client", info.clientId],
+    queryFn: () => GetClientById(info.clientId!),
+    enabled: info.clientId !== undefined,
+  });
+
   return (
-    <div className="flex w-full items-start gap-2 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/40">
+    <div className="flex w-full items-start gap-2 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/60 hover:text-white">
       <button
         type="button"
         onClick={() => onSelect(info)}
@@ -81,46 +85,60 @@ function ScheduleOption({
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">
-            {isLoading ? "Carregando..." : (data?.name ?? "Agendamento")}
+            {isClientLoading
+              ? "Carregando..."
+              : (client?.name ?? "Cliente não informado")}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {info.treatmentId
-              ? `Tratamento #${info.treatmentId}`
-              : "Tratamento não informado"}
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {isTreatmentLoading ? "Carregando..." : (treatment?.name ?? "Agendamento")}
           </p>
         </div>
       </button>
-      <Button
-        type="button"
-        variant="destructive"
-        size="icon-sm"
-        onClick={() => onCancel(info)}
-        disabled={isCanceling}
-        aria-label="Cancelar agendamento"
-        title="Cancelar agendamento"
-      >
-        {isCanceling ? <Loader2 className="animate-spin" /> : <XCircle />}
-      </Button>
     </div>
   );
 }
 
-function AppointmentDetails({ info }: { info: AppointmentInfo }) {
-  const { data, isLoading } = useQuery({
+function AppointmentDetails({
+  info,
+  onCancel,
+  isCanceling,
+}: {
+  info: AppointmentInfo;
+  onCancel: (info: AppointmentInfo) => void;
+  isCanceling: boolean;
+}) {
+  const { data: treatment, isLoading: isTreatmentLoading } = useQuery({
     queryKey: ["treatment", info.treatmentId],
     queryFn: () => GetTreatmentById(info.treatmentId!),
     enabled: info.treatmentId !== undefined,
   });
 
+  const { data: client, isLoading: isClientLoading } = useQuery({
+    queryKey: ["client", info.clientId],
+    queryFn: () => GetClientById(info.clientId!),
+    enabled: info.clientId !== undefined,
+  });
+
   return (
     <div className="grid gap-4 py-4 text-sm">
-      <DetailRow label="Tratamento">
-        {isLoading ? "Carregando..." : (data?.name ?? "Não informado")}
+      <DetailRow label="Cliente">
+        {isClientLoading ? "Carregando..." : (client?.name ?? "Não informado")}
       </DetailRow>
-      {data?.duration && <DetailRow label="Duração">{data.duration}</DetailRow>}
-      {data?.price !== undefined && (
+      {client?.email && <DetailRow label="E-mail">{client.email}</DetailRow>}
+      {client?.cellPhone && (
+        <DetailRow label="Telefone">{client.cellPhone}</DetailRow>
+      )}
+      <DetailRow label="Tratamento">
+        {isTreatmentLoading ? "Carregando..." : (treatment?.name ?? "Não informado")}
+      </DetailRow>
+      {treatment?.duration !== undefined && treatment?.duration !== null && (
+        <DetailRow label="Duração">
+          {Math.round(Number(treatment.duration) / 60)} min
+        </DetailRow>
+      )}
+      {treatment?.price !== undefined && (
         <DetailRow label="Valor">
-          {data.price.toLocaleString("pt-BR", {
+          {treatment.price.toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
@@ -128,6 +146,18 @@ function AppointmentDetails({ info }: { info: AppointmentInfo }) {
       )}
       <DetailRow label="Data">{formatDateLabel(info.date)}</DetailRow>
       <DetailRow label="Horário">{info.time}</DetailRow>
+
+      <div className="flex justify-end pt-2 border-t border-border">
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={() => onCancel(info)}
+          disabled={isCanceling}
+        >
+          {isCanceling ? <Loader2 className="animate-spin" /> : <XCircle />}
+          Cancelar agendamento
+        </Button>
+      </div>
     </div>
   );
 }
@@ -394,6 +424,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
         endDateTime: schedule.endDateTime!,
         reason: schedule.reason,
         treatmentId: schedule.treatmentId,
+        clientId: schedule.clientId,
         status: schedule.status,
       }))
       .sort((a, b) => a.time.localeCompare(b.time));
@@ -487,12 +518,16 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
               captionLayout="dropdown"
               loading={isLoading}
               className="[--cell-size:2.5rem] sm:[--cell-size:3rem] md:[--cell-size:3.5rem]"
+              classNames={{
+                day_button:
+                  "data-[selected-single=true]:bg-transparent data-[selected-single=true]:text-foreground",
+              }}
               modifiers={{
                 hasEvents: (d) => daysWithEvents.has(formatDateToYYYYMMDD(d)),
               }}
               modifiersClassNames={{
                 hasEvents:
-                  "relative after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-ring",
+                  "mx-auto flex aspect-square w-3/4 items-center justify-center rounded-full bg-ring text-white hover:bg-ring hover:text-white",
               }}
               onMonthChange={setVisibleMonth}
             />
@@ -554,11 +589,6 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
                 info={a}
                 key={`${a.id}-${a.date}-${a.time}-${a.treatmentId ?? i}`}
                 onSelect={setSelectedAppointment}
-                onCancel={handleCancelAppointment}
-                isCanceling={
-                  cancelScheduleMutation.isPending &&
-                  cancelScheduleMutation.variables?.id === a.id
-                }
               />
             ))}
           </div>
@@ -584,7 +614,14 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
           </DialogHeader>
 
           {selectedAppointment && (
-            <AppointmentDetails info={selectedAppointment} />
+            <AppointmentDetails
+              info={selectedAppointment}
+              onCancel={handleCancelAppointment}
+              isCanceling={
+                cancelScheduleMutation.isPending &&
+                cancelScheduleMutation.variables?.id === selectedAppointment.id
+              }
+            />
           )}
         </DialogContent>
       </Dialog>
