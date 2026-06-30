@@ -1,16 +1,24 @@
 import { useState, type ReactNode } from "react";
 import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { ptBR } from "date-fns/locale";
+import { Loader2, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
-import { ScheduledTreatments } from "@/requests/CalendarRequest";
-import { type CalendarResponse } from "@joao.sumi/qdule";
-import { useQuery } from "@tanstack/react-query";
+import { CancelSchedule, GetSchedules } from "@/requests/ScheduleRequest";
+import {
+  ScheduleStatus,
+  type ScheduleResponse,
+  type ScheduleUpdateRequest,
+} from "@joao.sumi/qdule";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { TreatmentById as GetTreatmentById } from "@/requests/TreatmentRequest";
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -37,18 +45,23 @@ interface AcompanhamentoProps {
   excecoes: ExcecaoDia[];
 }
 
-type AppointmentInfo = {
+interface AppointmentInfo extends ScheduleUpdateRequest {
+  id: number;
   time: string;
   date: string;
   treatmentId?: number;
-};
+}
 
 function ScheduleOption({
   info,
   onSelect,
+  onCancel,
+  isCanceling,
 }: {
   info: AppointmentInfo;
   onSelect: (info: AppointmentInfo) => void;
+  onCancel: (info: AppointmentInfo) => void;
+  isCanceling: boolean;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ["treatment", info.treatmentId],
@@ -57,25 +70,38 @@ function ScheduleOption({
   });
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(info)}
-      className="flex w-full items-start gap-3 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/40"
-    >
-      <span className="min-w-10 pt-0.5 text-xs text-muted-foreground">
-        {info.time}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">
-          {isLoading ? "Carregando..." : (data?.name ?? "Agendamento")}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {info.treatmentId
-            ? `Tratamento #${info.treatmentId}`
-            : "Tratamento não informado"}
-        </p>
-      </div>
-    </button>
+    <div className="flex w-full items-start gap-2 rounded-lg border border-border bg-white p-3 text-left transition-colors hover:bg-muted/40">
+      <button
+        type="button"
+        onClick={() => onSelect(info)}
+        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+      >
+        <span className="min-w-10 pt-0.5 text-xs text-muted-foreground">
+          {info.time}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {isLoading ? "Carregando..." : (data?.name ?? "Agendamento")}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {info.treatmentId
+              ? `Tratamento #${info.treatmentId}`
+              : "Tratamento não informado"}
+          </p>
+        </div>
+      </button>
+      <Button
+        type="button"
+        variant="destructive"
+        size="icon-sm"
+        onClick={() => onCancel(info)}
+        disabled={isCanceling}
+        aria-label="Cancelar agendamento"
+        title="Cancelar agendamento"
+      >
+        {isCanceling ? <Loader2 className="animate-spin" /> : <XCircle />}
+      </Button>
+    </div>
   );
 }
 
@@ -106,6 +132,64 @@ function AppointmentDetails({ info }: { info: AppointmentInfo }) {
   );
 }
 
+function CancelScheduleDialog({
+  appointment,
+  open,
+  isCanceling,
+  onOpenChange,
+  onConfirm,
+}: {
+  appointment: AppointmentInfo | null;
+  open: boolean;
+  isCanceling: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Cancelar agendamento</DialogTitle>
+          <DialogDescription>
+            Confirme o cancelamento antes de alterar o status do agendamento.
+          </DialogDescription>
+        </DialogHeader>
+
+        {appointment && (
+          <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm">
+            <p className="font-medium text-foreground">
+              {formatDateLabel(appointment.date)}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Horário: {appointment.time}
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isCanceling}
+          >
+            Manter agendamento
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isCanceling || !appointment}
+          >
+            {isCanceling && <Loader2 className="animate-spin" />}
+            Cancelar agendamento
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DetailRow({
   label,
   children,
@@ -133,30 +217,58 @@ function formatDateLabel(dateKey: string) {
 }
 
 export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
+  const queryClient = useQueryClient();
   const today = new Date();
   const [date, setDate] = useState<Date | undefined>(today);
   const [visibleMonth, setVisibleMonth] = useState(today);
   const [selectedAppointment, setSelectedAppointment] =
     useState<AppointmentInfo | null>(null);
+  const [appointmentToCancel, setAppointmentToCancel] =
+    useState<AppointmentInfo | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: [
-      "scheduled_treatments",
-      visibleMonth.getFullYear(),
-      visibleMonth.getMonth() + 1,
-    ],
-    queryFn: () =>
-      ScheduledTreatments(
-        visibleMonth.getFullYear(),
-        visibleMonth.getMonth() + 1,
-      ),
+  const visibleYear = visibleMonth.getFullYear();
+  const visibleMonthNumber = visibleMonth.getMonth() + 1;
+  const scheduleQueryKey = [
+    "schedules",
+    "month",
+    visibleYear,
+    visibleMonthNumber,
+  ];
+
+  const { data: schedules = [], isLoading } = useQuery({
+    queryKey: scheduleQueryKey,
+    queryFn: () => {
+      const { start, end } = getMonthDateTimeRange(visibleMonth);
+
+      return GetSchedules({
+        start,
+        end,
+        size: 500,
+      });
+    },
   });
 
-  const scheduledTreatments = data?.calendarList ?? [];
+  const cancelScheduleMutation = useMutation({
+    mutationFn: (info: AppointmentInfo) => CancelSchedule(info.id, info),
+    onSuccess: async (_updatedSchedule, info) => {
+      toast.success("Agendamento cancelado.");
+      setAppointmentToCancel(null);
+      setSelectedAppointment((current) =>
+        current?.id === info.id ? null : current,
+      );
+      await queryClient.invalidateQueries({ queryKey: scheduleQueryKey });
+    },
+    onError: () => {
+      toast.error("Não foi possível cancelar o agendamento. Tente novamente.");
+    },
+  });
+
+  const plannedSchedules = schedules.filter(isPlannedSchedule);
+
   const selectedDateKey = date ? formatDateToYYYYMMDD(date) : null;
   const todayDateKey = formatDateToYYYYMMDD(today);
   const agendamentos = getAppointmentsForDate(
-    scheduledTreatments,
+    plannedSchedules,
     selectedDateKey,
   );
 
@@ -176,17 +288,20 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
       : "Selecione um dia";
 
   const todayAgendamentos = getAppointmentsForDate(
-    scheduledTreatments,
+    plannedSchedules,
     todayDateKey,
   );
   const weekAgendamentosCount = getAppointmentsCountForWeek(
-    scheduledTreatments,
+    plannedSchedules,
     today,
   );
   const daysWithEvents = new Set(
-    scheduledTreatments
-      .filter((schedule) => (schedule.hours?.length ?? 0) > 0)
-      .map((schedule) => schedule.date)
+    plannedSchedules
+      .map((schedule) =>
+        schedule.startDateTime
+          ? getDateFromDateTime(schedule.startDateTime)
+          : null,
+      )
       .filter(Boolean),
   );
 
@@ -207,30 +322,85 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
     return date.toLocaleDateString("en-CA");
   }
 
-  function formatHour(hour: string) {
-    return hour.slice(0, 5);
+  function formatDateTimeForApi(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  }
+
+  function getMonthDateTimeRange(monthDate: Date) {
+    const start = new Date(
+      monthDate.getFullYear(),
+      monthDate.getMonth(),
+      1,
+      0,
+      0,
+      0,
+    );
+    const end = new Date(
+      monthDate.getFullYear(),
+      monthDate.getMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+    );
+
+    return {
+      start: formatDateTimeForApi(start),
+      end: formatDateTimeForApi(end),
+    };
+  }
+
+  function getDateFromDateTime(dateTime: string) {
+    return dateTime.split("T")[0] ?? "";
+  }
+
+  function formatHourFromDateTime(dateTime: string) {
+    return (dateTime.split("T")[1] ?? dateTime).slice(0, 5);
+  }
+
+  function isPlannedSchedule(schedule: ScheduleResponse) {
+    return (
+      schedule.status === ScheduleStatus.Scheduled ||
+      schedule.status === ScheduleStatus.Rescheduled
+    );
   }
 
   function getAppointmentsForDate(
-    schedules: CalendarResponse[],
+    schedules: ScheduleResponse[],
     dateKey: string | null,
   ) {
     if (!dateKey) return [];
 
     return schedules
-      .filter((schedule) => schedule.date === dateKey)
-      .flatMap((schedule) =>
-        (schedule.hours ?? []).map((hour) => ({
-          time: formatHour(hour),
-          date: schedule.date!,
-          treatmentId: schedule.treatmentId,
-        })),
+      .filter(
+        (schedule) =>
+          schedule.id !== undefined &&
+          schedule.startDateTime &&
+          schedule.endDateTime &&
+          getDateFromDateTime(schedule.startDateTime) === dateKey,
       )
+      .map((schedule) => ({
+        id: schedule.id!,
+        time: formatHourFromDateTime(schedule.startDateTime!),
+        date: getDateFromDateTime(schedule.startDateTime!),
+        startDateTime: schedule.startDateTime!,
+        endDateTime: schedule.endDateTime!,
+        reason: schedule.reason,
+        treatmentId: schedule.treatmentId,
+        status: schedule.status,
+      }))
       .sort((a, b) => a.time.localeCompare(b.time));
   }
 
   function getAppointmentsCountForWeek(
-    schedules: CalendarResponse[],
+    schedules: ScheduleResponse[],
     referenceDate: Date,
   ) {
     const weekStart = new Date(referenceDate);
@@ -242,15 +412,36 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
     weekEnd.setHours(23, 59, 59, 999);
 
     return schedules.reduce((total, schedule) => {
-      if (!schedule.date) return total;
+      if (!schedule.startDateTime) return total;
 
-      const scheduleDate = new Date(`${schedule.date}T00:00:00`);
+      const scheduleDate = new Date(
+        `${getDateFromDateTime(schedule.startDateTime)}T00:00:00`,
+      );
       const isCurrentWeek =
         scheduleDate >= weekStart && scheduleDate <= weekEnd;
 
-      return isCurrentWeek ? total + (schedule.hours?.length ?? 0) : total;
+      return isCurrentWeek ? total + 1 : total;
     }, 0);
   }
+
+  function handleCancelAppointment(info: AppointmentInfo) {
+    setAppointmentToCancel(info);
+  }
+
+  function handleConfirmCancelAppointment() {
+    if (!appointmentToCancel) return;
+
+    cancelScheduleMutation.mutate(appointmentToCancel);
+  }
+
+  function handleCancelDialogChange(open: boolean) {
+    if (cancelScheduleMutation.isPending) return;
+
+    if (!open) {
+      setAppointmentToCancel(null);
+    }
+  }
+
   return (
     <div className="p-6 flex flex-col gap-6">
       <div>
@@ -361,8 +552,13 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             {agendamentos.map((a, i) => (
               <ScheduleOption
                 info={a}
-                key={`${a.date}-${a.time}-${a.treatmentId ?? i}`}
+                key={`${a.id}-${a.date}-${a.time}-${a.treatmentId ?? i}`}
                 onSelect={setSelectedAppointment}
+                onCancel={handleCancelAppointment}
+                isCanceling={
+                  cancelScheduleMutation.isPending &&
+                  cancelScheduleMutation.variables?.id === a.id
+                }
               />
             ))}
           </div>
@@ -387,9 +583,19 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedAppointment && <AppointmentDetails info={selectedAppointment} />}
+          {selectedAppointment && (
+            <AppointmentDetails info={selectedAppointment} />
+          )}
         </DialogContent>
       </Dialog>
+
+      <CancelScheduleDialog
+        appointment={appointmentToCancel}
+        open={!!appointmentToCancel}
+        isCanceling={cancelScheduleMutation.isPending}
+        onOpenChange={handleCancelDialogChange}
+        onConfirm={handleConfirmCancelAppointment}
+      />
     </div>
   );
 }

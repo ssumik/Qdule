@@ -46,6 +46,9 @@ const getTreatmentByType = (type: TreatmentType) => {
   }
 };
 
+const isTreatmentActive = (treatment: Treatment) =>
+  treatment.status === TreatmentStatus.Active;
+
 const SearchComponent = ({
   text,
   onCardClick,
@@ -65,9 +68,11 @@ const SearchComponent = ({
     return <SearchLoading />;
   }
 
+  const activeTreatments = data?.content?.filter(isTreatmentActive) ?? [];
+
   return (
     <div>
-      {data?.content?.length === 0 ? (
+      {activeTreatments.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
           <Search className="w-10 h-10 text-muted-foreground/40" />
           <p className="text-muted-foreground font-medium">
@@ -80,20 +85,17 @@ const SearchComponent = ({
       ) : (
         <>
           <p className="text-sm text-muted-foreground mb-6">
-            {data?.content?.length} resultado
-            {data?.content?.length !== 1 ? "s" : ""} para{" "}
+            {activeTreatments.length} resultado
+            {activeTreatments.length !== 1 ? "s" : ""} para{" "}
             <span className="font-medium text-foreground">"{searchText}"</span>
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {data?.content?.map((item) => {
-              const active = item.status == TreatmentStatus.Active;
+            {activeTreatments.map((item) => {
               return (
                 <Card
                   key={item.id}
                   onClick={() => onCardClick(item)}
-                  className={`overflow-hidden bg-white/70 backdrop-blur-lg shadow-lg border cursor-pointer flex flex-col p-0 rounded-2xl transition-all duration-200 hover:shadow-xl hover:-translate-y-1 active:scale-95 ${
-                    active ? "ring-2 border-primary" : "border-white/50"
-                  }`}
+                  className="overflow-hidden bg-white/70 backdrop-blur-lg shadow-lg border cursor-pointer flex flex-col p-0 rounded-2xl transition-all duration-200 hover:shadow-xl hover:-translate-y-1 active:scale-95 ring-2 border-primary"
                 >
                   <div className="w-full h-32 overflow-hidden shrink-0">
                     <img
@@ -159,6 +161,7 @@ function CarrosselType({
   });
   const firstPage = data?.pages[0];
   const items = data?.pages.flatMap((page) => page.content ?? []) ?? [];
+  const activeItems = items.filter(isTreatmentActive);
 
   useEffect(() => {
     paginationStateRef.current = {
@@ -221,7 +224,7 @@ function CarrosselType({
     return <CarouselLoading title={getTreatmentByType(type)} />;
   }
 
-  if (firstPage?.totalElements == 0) return null;
+  if (firstPage?.totalElements == 0 || activeItems.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-3">
@@ -232,7 +235,7 @@ function CarrosselType({
             {getTreatmentByType(type)}
           </h2>
           <span className="text-sm text-muted-foreground font-normal ml-1">
-            ({firstPage?.totalElements})
+            ({activeItems.length})
           </span>
         </div>
 
@@ -266,16 +269,13 @@ function CarrosselType({
             className="flex gap-4 overflow-x-auto pb-3 px-1 snap-x snap-mandatory scroll-smooth"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
           >
-            {items.map((item) => {
-              const ativo = item?.status == TreatmentStatus.Active;
+            {activeItems.map((item) => {
               return (
                 <Card
                   key={item.id}
                   data-card
                   onClick={() => onCardClick(item)}
-                  className={`shrink-0 overflow-hidden bg-white/70 backdrop-blur-lg shadow-lg border cursor-pointer snap-start flex flex-col p-0 rounded-2xl w-[85%] sm:w-[48%] lg:w-[23%] transition-all duration-200 hover:shadow-xl hover:-translate-y-1 active:scale-95 ${
-                    ativo ? "border-secondary border-3" : "border-white/50"
-                  }`}
+                  className="shrink-0 overflow-hidden bg-white/70 backdrop-blur-lg shadow-lg border cursor-pointer snap-start flex flex-col p-0 rounded-2xl w-[85%] sm:w-[48%] lg:w-[23%] transition-all duration-200 hover:shadow-xl hover:-translate-y-1 active:scale-95 border-secondary border-3"
                 >
                   <div className="w-full h-44 lg:h-52 overflow-hidden shrink-0">
                     <img

@@ -70,7 +70,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
         dados.celular,
         startDateTime,
         endDateTime,
-        ScheduleStatus.Pending,
+        ScheduleStatus.Scheduled,
       );
     },
     onSuccess: (_schedule, dados) => {
