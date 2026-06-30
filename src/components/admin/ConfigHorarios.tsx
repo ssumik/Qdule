@@ -31,6 +31,14 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import GetShifts, { CreateShift, UpdateShift } from "@/requests/ShiftRequest";
 import {
+  CreateScheduleException,
+  DeleteScheduleException,
+  GetScheduleExceptions,
+  UpdateScheduleException,
+  type ScheduleExceptionPayload,
+  type ScheduleExceptionResponse,
+} from "@/requests/ScheduleExceptionRequest";
+import {
   DayOfWeek,
   ShiftStatus,
   type DayOfWeek as ApiDayOfWeek,
@@ -64,6 +72,7 @@ interface DiaPadrao {
 }
 
 export interface ExcecaoDia {
+  id?: number;
   date: Date;
   tipo: "folga" | "horario_especial";
   slots: SlotPadrao[];
@@ -108,6 +117,7 @@ const HORAS = Array.from(
   .sort();
 
 const SLOT_VAZIO: SlotPadrao = { inicio: "", fim: "" };
+const EMPTY_SCHEDULE_EXCEPTIONS: ScheduleExceptionResponse[] = [];
 
 const PADRAO_INICIAL: Record<DiaSemana, DiaPadrao> = {
   Domingo: { ativo: false, inicio: "", fim: "", breaks: [] },
@@ -286,6 +296,25 @@ function normalizarHorarioApi(horario?: string) {
   return match ? `${match[1]}:${match[2]}` : horario;
 }
 
+function formatDateToYYYYMMDD(date: Date) {
+  return date.toLocaleDateString("en-CA");
+}
+
+function dateTimeToDate(dateTime?: string) {
+  const datePart = dateTime?.split("T")[0];
+  return datePart ? new Date(`${datePart}T00:00:00`) : null;
+}
+
+function dateTimeToTime(dateTime?: string) {
+  if (!dateTime) return "";
+  const timePart = dateTime.includes("T") ? dateTime.split("T")[1] : dateTime;
+  return normalizarHorarioApi(timePart);
+}
+
+function montarDateTime(date: Date, horario: string) {
+  return `${formatDateToYYYYMMDD(date)}T${horario}:00`;
+}
+
 function ordenarSlots(slots: SlotPadrao[]) {
   return [...slots].sort(
     (a, b) => paraMinutos(a.inicio) - paraMinutos(b.inicio),
@@ -411,6 +440,96 @@ function criarMapaShiftsPorDia(shifts: ShiftResponse[] = []) {
   return mapa;
 }
 
+function exceptionParaSlots(exception: ScheduleExceptionResponse): SlotPadrao[] {
+  const startTime = dateTimeToTime(exception.startDateTime);
+  const endTime = dateTimeToTime(exception.endDateTime);
+
+  if (!startTime || !endTime) return [];
+
+  const breaks = [...(exception.breaks ?? [])]
+    .map((intervalo) => ({
+      inicio: dateTimeToTime(intervalo.startDateTime),
+      fim: dateTimeToTime(intervalo.endDateTime),
+    }))
+    .filter(intervaloCompleto)
+    .sort((a, b) => paraMinutos(a.inicio) - paraMinutos(b.inicio));
+
+  const slots: SlotPadrao[] = [];
+  let inicioAtual = startTime;
+
+  for (const intervalo of breaks) {
+    if (paraMinutos(inicioAtual) < paraMinutos(intervalo.inicio)) {
+      slots.push({ inicio: inicioAtual, fim: intervalo.inicio });
+    }
+    inicioAtual = intervalo.fim;
+  }
+
+  if (paraMinutos(inicioAtual) < paraMinutos(endTime)) {
+    slots.push({ inicio: inicioAtual, fim: endTime });
+  }
+
+  return slots;
+}
+
+function exceptionParaExcecaoDia(
+  exception: ScheduleExceptionResponse,
+): ExcecaoDia | null {
+  const date = dateTimeToDate(exception.startDateTime);
+  if (!date) return null;
+
+  const tipo =
+    exception.reason?.toLowerCase() === "folga"
+      ? "folga"
+      : "horario_especial";
+
+  return {
+    id: exception.id,
+    date,
+    tipo,
+    slots: tipo === "folga" ? [] : exceptionParaSlots(exception),
+  };
+}
+
+function exceptionsParaExcecoes(
+  exceptions: ScheduleExceptionResponse[] = [],
+) {
+  return exceptions
+    .map(exceptionParaExcecaoDia)
+    .filter((exception): exception is ExcecaoDia => exception !== null);
+}
+
+function excecaoParaPayload(excecao: ExcecaoDia): ScheduleExceptionPayload {
+  if (excecao.tipo === "folga") {
+    return {
+      startDateTime: `${formatDateToYYYYMMDD(excecao.date)}T00:00:00`,
+      endDateTime: `${formatDateToYYYYMMDD(excecao.date)}T23:59:59`,
+      reason: "folga",
+      breaks: [],
+    };
+  }
+
+  const slots = ordenarSlots(excecao.slots);
+  const primeiro = slots[0];
+  const ultimo = slots[slots.length - 1];
+
+  return {
+    startDateTime: montarDateTime(excecao.date, primeiro.inicio),
+    endDateTime: montarDateTime(excecao.date, ultimo.fim),
+    reason: "horario_especial",
+    breaks: slots.slice(0, -1).flatMap((slot, idx) => {
+      const proximo = slots[idx + 1];
+      if (slot.fim === proximo.inicio) return [];
+
+      return [
+        {
+          startDateTime: montarDateTime(excecao.date, slot.fim),
+          endDateTime: montarDateTime(excecao.date, proximo.inicio),
+        },
+      ];
+    }),
+  };
+}
+
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SlotRow({
@@ -526,6 +645,16 @@ export const ConfigHorarios = forwardRef<
     refetchOnWindowFocus: false,
   });
 
+  const {
+    data: scheduleExceptions = EMPTY_SCHEDULE_EXCEPTIONS,
+    isLoading: carregandoExcecoes,
+    isError: erroAoCarregarExcecoes,
+  } = useQuery({
+    queryKey: ["schedule-exceptions"],
+    queryFn: () => GetScheduleExceptions({ page: 1, size: 100 }),
+    refetchOnWindowFocus: false,
+  });
+
   const shiftsPorDia = useMemo(() => criarMapaShiftsPorDia(shifts), [shifts]);
   const restTimeOptions = useMemo(() => {
     if (
@@ -605,6 +734,18 @@ export const ConfigHorarios = forwardRef<
       mounted = false;
     };
   }, [carregandoShifts, erroAoCarregarShifts, shifts]);
+
+  useEffect(() => {
+    if (carregandoExcecoes || erroAoCarregarExcecoes) return;
+
+    const excecoesCarregadas = exceptionsParaExcecoes(scheduleExceptions);
+    onChange(excecoesCarregadas);
+  }, [
+    carregandoExcecoes,
+    erroAoCarregarExcecoes,
+    onChange,
+    scheduleExceptions,
+  ]);
 
   function haAlteracoesNaoSalvas() {
     return (
@@ -735,6 +876,52 @@ export const ConfigHorarios = forwardRef<
     },
   });
 
+  const salvarExcecaoMutation = useMutation({
+    mutationFn: async (excecao: ExcecaoDia) => {
+      const payload = excecaoParaPayload(excecao);
+
+      if (excecao.id !== undefined) {
+        return UpdateScheduleException(excecao.id, payload);
+      }
+
+      return CreateScheduleException(payload);
+    },
+    onSuccess: async () => {
+      setDialogOpen(false);
+      toast.success("Exceção salva com sucesso.");
+      await queryClient.invalidateQueries({ queryKey: ["schedule-exceptions"] });
+    },
+    onError: () => {
+      toast.error("Não foi possível salvar a exceção. Tente novamente.");
+    },
+  });
+
+  const removerExcecaoMutation = useMutation({
+    mutationFn: (excecao: ExcecaoDia) => {
+      if (excecao.id === undefined) {
+        return Promise.resolve();
+      }
+
+      return DeleteScheduleException(excecao.id);
+    },
+    onSuccess: async (_data, excecao) => {
+      setDeleteExcTarget(null);
+
+      if (excecao.id === undefined) {
+        onChange(excecoes.filter((e) => !isSameDay(e.date, excecao.date)));
+      } else {
+        await queryClient.invalidateQueries({
+          queryKey: ["schedule-exceptions"],
+        });
+      }
+
+      toast.success("Exceção removida.");
+    },
+    onError: () => {
+      toast.error("Não foi possível remover a exceção. Tente novamente.");
+    },
+  });
+
   // ── Padrão helpers ────────────────────────────────────────────────────────
 
   function toggleDia(dia: DiaSemana) {
@@ -853,19 +1040,14 @@ export const ConfigHorarios = forwardRef<
       }
     }
 
-    const sem = excecoes.filter((e) => !isSameDay(e.date, excDate));
+    const excecaoExistente = excecoes.find((e) => isSameDay(e.date, excDate));
 
-    onChange([
-      ...sem,
-      {
-        date: excDate,
-        tipo: excTipo,
-        slots: excTipo === "folga" ? [] : excSlots,
-      },
-    ]);
-
-    setDialogOpen(false);
-    toast.success("Exceção salva com sucesso.");
+    salvarExcecaoMutation.mutate({
+      id: excecaoExistente?.id,
+      date: excDate,
+      tipo: excTipo,
+      slots: excTipo === "folga" ? [] : excSlots,
+    });
   }
 
   function confirmRemoveExcecao(exc: ExcecaoDia) {
@@ -874,14 +1056,16 @@ export const ConfigHorarios = forwardRef<
 
   function handleRemoveExcecao() {
     if (!deleteExcTarget) return;
-    onChange(excecoes.filter((e) => !isSameDay(e.date, deleteExcTarget.date)));
-    setDeleteExcTarget(null);
-    toast.success("Exceção removida.");
+    removerExcecaoMutation.mutate(deleteExcTarget);
   }
 
   const excDates = excecoes.map((e) => e.date);
   const salvandoShifts = salvarShiftsMutation.isPending;
+  const salvandoExcecao = salvarExcecaoMutation.isPending;
+  const removendoExcecao = removerExcecaoMutation.isPending;
   const controlesPadraoDesabilitados = carregandoShifts || salvandoShifts;
+  const controlesExcecoesDesabilitados =
+    carregandoExcecoes || salvandoExcecao || removendoExcecao;
 
   return (
     <div className="p-6 flex flex-col gap-6">
@@ -1048,13 +1232,25 @@ export const ConfigHorarios = forwardRef<
         description="Folgas ou horários especiais em datas específicas"
       >
         <div className="flex flex-col gap-3">
-          {excecoes.length === 0 && (
+          {carregandoExcecoes && (
+            <p className="text-sm text-muted-foreground py-2">
+              Carregando exceções...
+            </p>
+          )}
+
+          {erroAoCarregarExcecoes && (
+            <p className="text-sm text-destructive py-2">
+              Não foi possível carregar as exceções.
+            </p>
+          )}
+
+          {!carregandoExcecoes && excecoes.length === 0 && (
             <p className="text-sm text-muted-foreground py-2">
               Nenhuma exceção cadastrada.
             </p>
           )}
 
-          {excecoes
+          {[...excecoes]
             .sort((a, b) => a.date.getTime() - b.date.getTime())
             .map((exc) => (
               <div
@@ -1096,6 +1292,7 @@ export const ConfigHorarios = forwardRef<
                   size="icon"
                   className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
                   onClick={() => confirmRemoveExcecao(exc)}
+                  disabled={controlesExcecoesDesabilitados}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
@@ -1106,6 +1303,7 @@ export const ConfigHorarios = forwardRef<
             variant="outline"
             className="gap-2 w-fit bg-white"
             onClick={openDialog}
+            disabled={controlesExcecoesDesabilitados}
           >
             <Plus className="w-4 h-4" /> Adicionar exceção
           </Button>
@@ -1210,8 +1408,11 @@ export const ConfigHorarios = forwardRef<
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={saveExcecao} disabled={!excDate}>
-              Salvar
+            <Button
+              onClick={saveExcecao}
+              disabled={!excDate || salvandoExcecao}
+            >
+              {salvandoExcecao ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1239,8 +1440,12 @@ export const ConfigHorarios = forwardRef<
             <Button variant="outline" onClick={() => setDeleteExcTarget(null)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleRemoveExcecao}>
-              Remover
+            <Button
+              variant="destructive"
+              onClick={handleRemoveExcecao}
+              disabled={removendoExcecao}
+            >
+              {removendoExcecao ? "Removendo..." : "Remover"}
             </Button>
           </DialogFooter>
         </DialogContent>

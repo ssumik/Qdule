@@ -1,6 +1,5 @@
 import { baseUrl } from "@/EnvVariables";
 import { ScheduleResourceApi, ScheduleStatus } from "@joao.sumi/qdule";
-import { CreateClient } from "./ClientRequest";
 
 export async function CreateSchedule(
   treatmentId: number,
@@ -11,13 +10,15 @@ export async function CreateSchedule(
   endDateTime: string,
   status: ScheduleStatus,
 ) {
-  const client = await CreateClient(clientName, clientEmail, clientNumber);
-
   const scheduleApi = new ScheduleResourceApi(undefined, baseUrl);
   const { data } = await scheduleApi.schedulesPost({
     scheduleCreateRequest: {
       treatmentId,
-      clientId: client.id,
+      client: {
+        name: clientName,
+        email: clientEmail,
+        cellPhone: clientNumber,
+      },
       startDateTime,
       endDateTime,
       reason: "",
