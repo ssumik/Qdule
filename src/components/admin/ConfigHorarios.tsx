@@ -1086,10 +1086,10 @@ export const ConfigHorarios = forwardRef<
           </p>
         )}
 
-        <div className="pb-4 mb-1 border-b border-border">
-          <p className="text-xs font-medium text-muted-foreground mb-2">
-            Descanso entre tratamentos
-          </p>
+        <div className="pb-4 mb-1 flex border-border border-b">
+          <span className="sm:text-xs font-medium text-accent p-2">
+            Descanso entre um cliente e outro
+          </span>
           <Select
             value={restTimeBetweenAppointments}
             onValueChange={setRestTimeBetweenAppointments}
@@ -1151,11 +1151,11 @@ export const ConfigHorarios = forwardRef<
                 </div>
 
                 {config.ativo && (
-                  <div className="flex flex-col gap-3 pl-11">
-                    <div className="flex flex-col gap-2">
-                      <p className="text-xs font-medium text-muted-foreground">
+                  <div className="flex flex-col">
+                    <div className="flex">
+                      <span className="text-xs font-medium text-accent py-2 px-1">
                         Turno
-                      </p>
+                      </span>
                       <div className="flex items-center gap-2">
                         <Select
                           value={config.inicio || undefined}
@@ -1202,20 +1202,22 @@ export const ConfigHorarios = forwardRef<
                     </div>
 
                     {config.breaks.length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Pausas
+                     <div className="flex flex-col">
+                        <p className="text-xs font-medium text-accent py-2 **:sm:py-2 md:flex px-25">
+                            Pausas
                         </p>
-                        {config.breaks.map((slot, idx) => (
-                          <SlotRow
-                            key={idx}
-                            slot={slot}
-                            onChange={(s) => updateBreak(dia, idx, s)}
-                            onRemove={() => removeBreak(dia, idx)}
-                            removable={!controlesPadraoDesabilitados}
-                            disabled={controlesPadraoDesabilitados}
-                          />
-                        ))}
+                        <div className="flex flex-col gap-2">
+                          {config.breaks.map((slot, idx) => (
+                              <SlotRow
+                                key={idx}
+                                slot={slot}
+                                onChange={(s) => updateBreak(dia, idx, s)}
+                                onRemove={() => removeBreak(dia, idx)}
+                                removable={!controlesPadraoDesabilitados}
+                                disabled={controlesPadraoDesabilitados}
+                              />
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1260,31 +1262,33 @@ export const ConfigHorarios = forwardRef<
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-4 h-4 mt-0.5 text-amber-500 shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {formatDate(exc.date)}
-                    </p>
+                    
 
                     {exc.tipo === "folga" ? (
-                      <div className="flex flex-col gap-0.5 mt-1">
-                        <span className="inline-block w-fit text-xs font-medium px-2 py-0.5 rounded-md bg-red-100 text-red-800">
+                      <div className="flex flex-col gap-1 mt-1">
+                        <span className="inline-block w-fit text-xs font-medium px-2 py-1 rounded-xl bg-red-100 text-red-800">
                           Folga
                         </span>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-gray-400 italic">
                           Dia inteiro
                         </p>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-0.5 mt-1">
-                        <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                      <div className="flex flex-col gap-1 mt-1">
+                        <span className="inline-block text-xs font-medium px-2 py-1 rounded-xl bg-blue-100 text-blue-800">
                           Horário especial
                         </span>
                         {exc.slots.map((s, i) => (
-                          <p key={i} className="text-xs text-muted-foreground">
+                          <p key={i} className="text-xs text-gray-400 italic">
                             {s.inicio} – {s.fim}
                           </p>
                         ))}
                       </div>
                     )}
+
+                    <p className="text-sm">
+                      {formatDate(exc.date)}
+                    </p>
                   </div>
                 </div>
                 <Button
