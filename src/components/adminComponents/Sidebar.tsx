@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Calendar, Settings, Menu, X, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AdminPage } from "@/pages/admin-dashboard/Admin";
+import type { AdminPage } from "@/pages/adminPages/AdminMain";
 
 interface SidebarProps {
   current: AdminPage;

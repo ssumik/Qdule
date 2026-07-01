@@ -1,13 +1,13 @@
 import { useRef, useState } from "react";
-import { Sidebar } from "@/components/admin/Sidebar";
-import { Acompanhamento } from "@/components/admin/Acompanhamento";
-import { Servicos } from "@/components/admin/CadastroServicos";
-import { Configuracoes } from "@/components/admin/Configuracoes";
-import { ConfigHorarios } from "@/components/admin/ConfigHorarios";
+import { Sidebar } from "@/components/adminComponents/Sidebar";
+import { Acompanhamento } from "@/components/adminComponents/Acompanhamento";
+import { Servicos } from "@/components/adminComponents/CRUDServicos";
+import { Configuracoes } from "@/components/adminComponents/Configuracoes";
+import { ConfigHorarios } from "@/components/adminComponents/ConfigHorarios";
 import type {
   ExcecaoDia,
   ConfigHorariosHandle,
-} from "@/components/admin/ConfigHorarios";
+} from "@/components/adminComponents/ConfigHorarios";
 
 export type AdminPage =
   | "acompanhamento"

@@ -1,7 +1,7 @@
 // src/routes/AppRoutes.tsx
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Servico from "@/pages/Servicos";
+import Servico from "@/pages/usuarioPages/MuralServicos";
 import Admin from "@/pages/admin-dashboard/Admin";
 import { Login } from "@/pages/admin-dashboard/Login";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";

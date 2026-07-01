@@ -11,7 +11,7 @@ import {
   Search,
   LoaderCircle,
 } from "lucide-react";
-import { AgendaInline } from "@/pages/AgendaInline";
+import { AgendaInline } from "@/pages/usuarioPages/Agenda";
 import { TreatmentStatus, TreatmentType } from "@joao.sumi/qdule";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { TreatmentFilter } from "@/requests/TreatmentRequest";

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ptBR } from "date-fns/locale";
 import { Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import type { ExcecaoDia } from "@/components/admin/ConfigHorarios";
+import type { ExcecaoDia } from "@/components/adminComponents/ConfigHorarios";
 import { CancelSchedule, GetSchedules } from "@/requests/ScheduleRequest";
 import {
   ScheduleStatus,
