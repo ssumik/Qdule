@@ -527,7 +527,7 @@ export function Acompanhamento({ excecoes }: AcompanhamentoProps) {
               }}
               modifiersClassNames={{
                 hasEvents:
-                  "mx-auto flex aspect-square w-3/4 items-center justify-center rounded-full bg-ring text-white hover:bg-ring hover:text-white",
+                  "mx-auto flex aspect-square w-3/4 items-center justify-center rounded-full bg-ring text-white hover:bg-ring hover:text-white!",
               }}
               onMonthChange={setVisibleMonth}
             />

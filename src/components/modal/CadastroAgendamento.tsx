@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,12 @@ interface CadastroAgendamentoProps {
   horario: string | null;
   isSubmitting?: boolean;
 
-  onSubmit: (dados: { nome: string; email: string; celular: string }) => void;
+  onSubmit: (dados: {
+    nome: string;
+    email: string;
+    celular: string;
+  }) => void | Promise<void>;
+  onClose?: () => void;
 }
 
 interface FormData {
@@ -31,8 +37,10 @@ export function CadastroAgendamento({
   horario,
   isSubmitting = false,
   onSubmit,
+  onClose,
 }: CadastroAgendamentoProps) {
   const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [agendamentoConfirmado, setAgendamentoConfirmado] = useState(false);
 
   const {
     register,
@@ -57,13 +65,64 @@ export function CadastroAgendamento({
     setValue("celular", formatado);
   }
 
-  function handleFormSubmit(dados: {
+  async function handleFormSubmit(dados: {
     nome: string;
     email: string;
     celular: string;
   }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    onSubmit(dados);
+
+    try {
+      await onSubmit(dados);
+      setAgendamentoConfirmado(true);
+    } catch {
+      // Erro já é tratado pelo componente pai (toast).
+    }
+  }
+
+  if (agendamentoConfirmado) {
+    return (
+      <div className="flex flex-col items-center text-center gap-4 py-6">
+        <CheckCircle2 className="size-14 text-accent" />
+
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold">
+            Agendamento feito com sucesso!
+          </h2>
+        </div>
+
+        <div className="bg-primary rounded-xl p-4 flex flex-col sm:flex-row items-center gap-4 text-white w-full">
+          <div className="flex-1 text-center sm:text-left">
+            <p className="text-sm text-black">Serviço agendado:</p>
+            <h3 className="font-bold text-accent wrap-break-words">
+              {servico?.name}
+            </h3>
+          </div>
+
+          <div className="bg-accent rounded-xl px-4 py-3 items-center text-center gap-3 text-white w-full sm:w-auto justify-center">
+            <span className="font-bold p-2">
+              {dia}/{mes}
+            </span>
+            <span className="sm:block font-semibold p-2"></span>
+            <span className="font-bold p-2">{horario}h</span>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Caso não possa comparecer, entre em contato com a Hanna pelo WhatsApp.
+        </p>
+
+        {onClose && (
+          <Button
+            type="button"
+            onClick={onClose}
+            className="w-full bg-accent hover:bg-buttonhover text-white rounded-xl h-12 mt-2 cursor-pointer"
+          >
+            Fechar
+          </Button>
+        )}
+      </div>
+    );
   }
 
   return (

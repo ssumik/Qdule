@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Servico from "@/pages/Servicos";
 import Admin from "@/pages/admin-dashboard/Admin";
 import { Login } from "@/pages/admin-dashboard/Login";
-import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function AppRoutes() {

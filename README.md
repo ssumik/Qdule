@@ -107,15 +107,17 @@ Permite definir os horários de funcionamento padrão.
 
 É possível:
 
-- Ativar ou desativar dias da semana;
-- Cadastrar intervalos de atendimento;
-- Excluir intervalos;
-- Definir horários recorrentes.
+- Cadastrar um tempo de descanso (toda vez que houver um atendimento é somado atendimento + tempo de descanso escolhido para liberar o próximo horário da agenda)
+- Ativar ou desativar dias da semana recorrentes
+- Cadastrar turnos
+- Alterar turnos
+- Cadastrar pausas (ex: almoço)
+- Excluir pausas
 
 #### Regras
 
-- Todos os dias devem possuir pelo menos um intervalo antes de salvar.
-- O sistema impede a criação de intervalos sobrepostos.
+- O sistema impede a criação de turnos com horários de início e fim sobrepostos.
+- Todos os dias da semana ativos devem conter horário de início e fim.
 
 #### Exceções
 
@@ -188,7 +190,6 @@ Exemplo:
 - Quarkus
 - Neon (PostgreSQL)
 - Supabase Storage (armazenamento de imagens por URL)
-- Resend (envio de e-mails)
 
 ---
 

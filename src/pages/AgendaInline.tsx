@@ -4,6 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 import type { Treatment } from "@/components/servicos/cards_servicos";
 import { CadastroAgendamento } from "@/components/modal/CadastroAgendamento";
 import { CreateSchedule } from "@/requests/ScheduleRequest";
@@ -73,13 +74,11 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
         ScheduleStatus.Scheduled,
       );
     },
-    onSuccess: (_schedule, dados) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: availabilityQueryKey });
-      alert(`Agendamento realizado com sucesso para ${dados.nome}!`);
-      setModalAberto(false);
     },
     onError: () => {
-      alert("Não foi possível realizar o agendamento. Tente novamente.");
+      toast.error("Não foi possível realizar o agendamento. Tente novamente.");
     },
   });
 
@@ -121,12 +120,14 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
 
   // ─── Cadastro concluído ───────────────────────────────────────────
 
-  function handleCadastroConcluido(dados: {
+  async function handleCadastroConcluido(dados: {
     nome: string;
     email: string;
     celular: string;
   }) {
-    createScheduleMutation.mutate(dados);
+    // await propaga o erro para o CadastroAgendamento caso a API falhe,
+    // e só resolve quando o agendamento é confirmado de verdade.
+    await createScheduleMutation.mutateAsync(dados);
   }
 
   // ─── Fechamento do modal ──────────────────────────────────────────
@@ -318,6 +319,7 @@ export function AgendaInline({ servico, onFechar }: AgendaInlineProps) {
                   }
                   isSubmitting={createScheduleMutation.isPending}
                   onSubmit={handleCadastroConcluido}
+                  onClose={() => setModalAberto(false)}
                 />
               </DialogContent>
             </Dialog>
